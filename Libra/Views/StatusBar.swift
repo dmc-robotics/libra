@@ -20,7 +20,8 @@ struct StatusBar: View {
             .font(.callout)
             .lineLimit(1)
             .padding(.horizontal, 12)
-            // Never let the status text set the viewer column's minimum width; clip it instead
+            // Never let the status text set the viewer column's minimum width; clip it instead.
+            // A content-driven minimum here crashed the window when it was resized (see WindowResizeTests).
             .frame(minWidth: 0, maxWidth: .infinity, minHeight: Layout.statusBarHeight, maxHeight: Layout.statusBarHeight, alignment: .leading)
             .clipped()
         }

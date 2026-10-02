@@ -39,7 +39,7 @@ struct MassPropertiesView: View {
         }
         .monospacedDigit()
         .lineLimit(1)
-        // Shrink to fit the inspector rather than forcing it wider (a forced minimum width can loop with the scroll bar)
+        // Long values shrink a little in a narrow inspector instead of being cut off
         .minimumScaleFactor(Layout.minimumTextScale)
         .textSelection(.enabled)
     }

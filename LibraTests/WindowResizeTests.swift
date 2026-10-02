@@ -5,11 +5,15 @@ import SwiftUI
 import Testing
 
 /// Shrinking the document window used to crash with an AppKit "too many Update Constraints passes"
-/// exception when the window got narrower than the split view's columns could fit.
+/// exception: the window could get narrower than the split view's columns needed, and the status bar's
+/// text raised the viewer column's minimum. Both are covered: the test fails if either comes back.
 @MainActor
 @Suite struct WindowResizeTests {
     @Test func shrinkingTheWindowSettles() {
-        let document = LibraFileDocument(content: DocumentModelTests.makeDocument())
+        // Masses make the status bar and the inspector's mass section show long numbers
+        var content = DocumentModelTests.makeDocument()
+        content.setMass(.measured(0.123456), forParts: Set(content.parts.map(\.id)))
+        let document = LibraFileDocument(content: content)
         let root = DocumentView(document: .constant(document), fileURL: nil)
             .frame(minWidth: Layout.windowMinWidth, minHeight: Layout.windowMinHeight)
         let controller = NSHostingController(rootView: root)

@@ -8,20 +8,29 @@ enum Preferences {
 }
 
 enum Layout {
-    static let windowMinWidth: CGFloat = 900
+    static let sidebarMinWidth: CGFloat = 200
+    static let sidebarIdealWidth: CGFloat = 240
+    /// The viewer column's share of the window minimum. Not applied to the column itself: an explicit
+    /// minimum there makes the split view loop too.
+    static let detailMinWidth: CGFloat = 360
+    static let inspectorMinWidth: CGFloat = 300
+    static let inspectorIdealWidth: CGFloat = 340
+    /// Room for the split view's dividers and insets.
+    static let splitViewSlack: CGFloat = 60
+    /// Must cover every column's minimum. If the window can get narrower than the columns need, SwiftUI's
+    /// split view never settles and AppKit aborts ("more Update Constraints in Window passes than there are views").
+    static let windowMinWidth: CGFloat = sidebarMinWidth + detailMinWidth + inspectorMinWidth + splitViewSlack
     static let windowMinHeight: CGFloat = 560
     static let defaultWindowWidth: CGFloat = 1300
     static let defaultWindowHeight: CGFloat = 820
-    static let sidebarMinWidth: CGFloat = 200
-    static let sidebarIdealWidth: CGFloat = 240
-    static let inspectorMinWidth: CGFloat = 280
-    static let inspectorIdealWidth: CGFloat = 320
     static let numberFieldWidth: CGFloat = 90
+    static let unitLabelWidth: CGFloat = 40
     static let settingsWidth: CGFloat = 380
     static let exportSheetWidth: CGFloat = 640
     static let exportSheetHeight: CGFloat = 520
-    static let totalsPadding: CGFloat = 10
-    static let cornerRadius: CGFloat = 10
+    static let statusBarHeight: CGFloat = 28
+    /// How far inspector numbers may shrink to fit a narrow column.
+    static let minimumTextScale: CGFloat = 0.75
 }
 
 enum Formatting {
@@ -44,6 +53,9 @@ enum ViewerStyle {
         [0.62, 0.50, 0.88, 1], [0.90, 0.78, 0.32, 1], [0.35, 0.78, 0.78, 1], [0.70, 0.55, 0.40, 1]
     ]
     static let edgeColor: SIMD4<Float> = [0.08, 0.08, 0.10, 1]
+    /// Viewer background in dark and light appearance.
+    static let darkBackground: SIMD3<Double> = [0.22, 0.22, 0.24]
+    static let lightBackground: SIMD3<Double> = [0.97, 0.97, 0.98]
     /// Mouse travel (points) before a press counts as a drag rather than a click.
     static let dragThreshold = 3.0
     /// Zoom exponent per line of mouse-wheel scroll (about 10% per notch).

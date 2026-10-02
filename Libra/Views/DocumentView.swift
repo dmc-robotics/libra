@@ -21,6 +21,7 @@ struct DocumentView: View {
                 mainView
             }
         }
+        .focusedSceneValue(\.documentActions, actions)
         .fileImporter(isPresented: $isImporterPresented, allowedContentTypes: UTType.stepFiles) { result in
             if case .success(let url) = result {
                 importStep(from: url)
@@ -41,19 +42,36 @@ struct DocumentView: View {
         }
     }
 
+    /// Menu bar commands for this window.
+    private var actions: DocumentActions {
+        let isEmpty = document.content.isEmpty
+        let selectedBody = model.selectedBody(in: document.content)
+        let hasSelectedParts = !model.selectedPartIDs(in: document.content).isEmpty
+        return DocumentActions(
+            importStep: isEmpty && !model.isImporting ? { isImporterPresented = true } : nil,
+            export: isEmpty ? nil : { model.isShowingExport = true },
+            fit: { model.viewer.fit() },
+            look: { model.viewer.look(from: $0, in: document.content.libraFrame) },
+            colorMode: $model.colorMode,
+            newBody: hasSelectedParts && selectedBody == nil ? { model.createBody(in: &document.content) } : nil,
+            deleteBody: selectedBody.map { body in { model.deleteBody(body.id, in: &document.content) } }
+        )
+    }
+
     // MARK: Empty document
 
     private var emptyState: some View {
         ContentUnavailableView {
-            Label("Import a STEP File", systemImage: "cube.transparent")
+            Label("No Model", systemImage: "cube.transparent")
         } description: {
-            Text("Libra reads an assembly's parts, names and placements. Export STEP from Fusion with File › Export.")
+            Text("Import a STEP assembly to start. In Fusion, use File › Export and choose STEP.")
         } actions: {
             if model.isImporting {
                 ProgressView("Importing…")
             } else {
                 Button("Import STEP File…") { isImporterPresented = true }
                     .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
             }
         }
         .dropDestination(for: URL.self) { urls, _ in
@@ -71,15 +89,8 @@ struct DocumentView: View {
                 .navigationSplitViewColumnWidth(min: Layout.sidebarMinWidth, ideal: Layout.sidebarIdealWidth)
         } detail: {
             viewer
-                .overlay(alignment: .bottomLeading) {
-                    TotalsBar(document: document.content, model: model)
-                        .padding(Layout.totalsPadding)
-                }
-                .overlay(alignment: .top) {
-                    if model.tool != .select {
-                        PickingHint(tool: model.tool, snap: model.hoverSnap) { model.tool = .select }
-                            .padding(Layout.totalsPadding)
-                    }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    StatusBar(document: $document.content, model: model)
                 }
         }
         .inspector(isPresented: $isInspectorPresented) {
@@ -107,71 +118,48 @@ struct DocumentView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .principal) {
+        ToolbarItemGroup {
             Menu {
                 ForEach(StandardView.allCases, id: \.self) { view in
                     Button(view.name) { model.viewer.look(from: view, in: document.content.libraFrame) }
                 }
             } label: {
-                Label("View", systemImage: "cube")
+                Label("Standard View", systemImage: "cube")
             }
-            .help("Standard views, relative to the Libra frame")
+            .help("Look from a standard direction, relative to the Libra frame")
             Button {
                 model.viewer.fit()
             } label: {
-                Label("Fit", systemImage: "arrow.up.left.and.arrow.down.right")
+                Label("Zoom to Fit", systemImage: "arrow.up.left.and.down.right.magnifyingglass")
             }
-            .help("Fit the model in the view (or double-click it)")
-            Picker("Color", selection: $model.colorMode) {
-                ForEach(ColorMode.allCases) { mode in
-                    Text(mode.name).tag(mode)
+            .help("Fit the model in the view")
+            Menu {
+                Picker("Color By", selection: $model.colorMode) {
+                    ForEach(ColorMode.allCases) { mode in
+                        Text(mode.name).tag(mode)
+                    }
                 }
+                .pickerStyle(.inline)
+            } label: {
+                Label("Color By", systemImage: "paintpalette")
             }
-            .pickerStyle(.menu)
-            .help("How parts are colored")
+            .help("Color parts by their CAD color, mass status or body")
         }
-        ToolbarItemGroup(placement: .primaryAction) {
+        ToolbarItem {
             Button {
                 model.isShowingExport = true
             } label: {
                 Label("Export", systemImage: "square.and.arrow.up")
             }
             .help("Export mass properties as JSON, CSV, MJCF or URDF")
+        }
+        ToolbarItem {
             Button {
                 isInspectorPresented.toggle()
             } label: {
-                Label("Inspector", systemImage: "sidebar.right")
+                Label("Inspector", systemImage: "sidebar.trailing")
             }
             .help("Show or hide the inspector")
-        }
-    }
-}
-
-/// Instructions shown while the frame tool waits for a click.
-private struct PickingHint: View {
-    let tool: Tool
-    let snap: Snap?
-    let cancel: () -> Void
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
-                Text(snap?.kind.name ?? "Hover over a feature").foregroundStyle(.secondary)
-            }
-            Button("Cancel", action: cancel)
-                .keyboardShortcut(.cancelAction)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.regularMaterial, in: .rect(cornerRadius: Layout.cornerRadius))
-    }
-
-    private var title: String {
-        switch tool {
-        case .select: ""
-        case .pickOrigin: "Click a hole or shaft edge, face, or corner for the origin"
-        case .pickDirection(_, let axis): "Click a shaft, face or edge to aim \(axis.name)"
         }
     }
 }

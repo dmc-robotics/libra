@@ -15,18 +15,15 @@ struct SidebarView: View {
             }
             Section("Bodies") {
                 ForEach(document.bodies) { body in
-                    Label {
-                        Text(body.name)
-                        Text("\(body.partIDs.count) parts").foregroundStyle(.secondary)
-                    } icon: {
-                        Image(systemName: "cube.fill")
-                    }
-                    .tag(SidebarItem.body(body.id))
+                    Label(body.name, systemImage: "cube.fill")
+                        .badge(body.partIDs.count)
+                        .tag(SidebarItem.body(body.id))
                 }
                 if document.bodies.isEmpty {
-                    Text("Select parts, then choose New Body from the context menu or inspector")
-                        .font(.caption)
+                    Text("Select parts, then ⌘G")
                         .foregroundStyle(.secondary)
+                        .help("Edit › New Body from Selection")
+                        .selectionDisabled()
                 }
             }
         }
@@ -47,38 +44,42 @@ struct SidebarView: View {
     @ViewBuilder
     private func row(for node: OutlineNode) -> some View {
         if case .part(let id) = node.id, let part = document.part(id) {
-            Label {
-                Text(node.name)
-            } icon: {
+            HStack {
+                Label(node.name, systemImage: "cube")
+                Spacer()
                 MassStatusIcon(part: part)
             }
         } else {
-            Label(node.name, systemImage: "shippingbox")
+            Label(node.name, systemImage: "square.stack.3d.up")
         }
     }
 }
 
+/// A quiet trailing mark for a part's mass: hollow until assigned, a warning only when something is wrong.
 struct MassStatusIcon: View {
     let part: Part
 
     var body: some View {
-        switch part.mass {
-        case .unassigned:
-            Image(systemName: "circle.dashed")
-                .foregroundStyle(.orange)
-                .help("No mass assigned")
-        case .measured where !part.hasVolume:
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-                .help("This part has no volume, so a measured mass can't be spread through it. Use an override.")
-        case .measured:
-            Image(systemName: "scalemass.fill")
-                .foregroundStyle(.green)
-                .help("Measured mass")
-        case .override:
-            Image(systemName: "slider.horizontal.3")
-                .foregroundStyle(.blue)
-                .help("Override values")
+        Group {
+            switch part.mass {
+            case .unassigned:
+                Image(systemName: "circle.dashed")
+                    .foregroundStyle(.tertiary)
+                    .help("No mass yet")
+            case .measured where !part.hasVolume:
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .help("This part has no volume, so a measured mass can't be spread through it. Use an override.")
+            case .measured:
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                    .help("Measured mass")
+            case .override:
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.blue)
+                    .help("Override values")
+            }
         }
+        .imageScale(.small)
     }
 }

@@ -11,6 +11,8 @@ struct ExportSheet: View {
     var body: some View {
         let text = kind.text(for: report)
         VStack(alignment: .leading, spacing: 12) {
+            Text("Export Mass Properties")
+                .font(.headline)
             Picker("Format", selection: $kind) {
                 ForEach(ExportKind.allCases) { kind in
                     Text(kind.name).tag(kind)

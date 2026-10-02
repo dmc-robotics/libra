@@ -11,6 +11,7 @@ struct LibraApp: App {
         .commands {
             SidebarCommands()
             InspectorCommands()
+            LibraCommands()
         }
 
         Settings {

@@ -33,21 +33,9 @@ private struct LibraFrameInspector: View {
         } header: {
             Text("Libra Frame")
         } footer: {
-            Text("The reference for totals, standard views and export. Usually the robot's base: pick its origin and aim its axes (Z up).")
+            Text("The reference for totals, views and export, usually the robot's base with Z up. In STEP file coordinates.")
         }
-        Section("Assembly") {
-            AssignmentCounts(parts: document.parts)
-        }
-    }
-}
-
-private struct AssignmentCounts: View {
-    let parts: [Part]
-
-    var body: some View {
-        let unassigned = parts.filter { $0.massProperties == nil }.count
-        LabeledContent("Parts", value: "\(parts.count)")
-        LabeledContent("Without mass", value: "\(unassigned)")
+        MassPropertiesSection(summary: MassSummary(parts: document.parts).expressed(in: document.libraFrame), frameName: "Libra frame")
     }
 }
 
@@ -68,23 +56,24 @@ private struct BodyInspector: View {
             let summary = MassSummary(parts: document.parts(body.partIDs))
             Section("Body") {
                 TextField("Name", text: $document.bodies[index].name)
-                LabeledContent("Parts", value: "\(summary.partCount)")
-                if summary.unassignedCount > 0 {
-                    Label("\(summary.unassignedCount) without mass", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                LabeledContent("Parts") {
+                    HStack {
+                        Text("\(summary.partCount)")
+                        Button("Select") {
+                            model.selection = Set(body.partIDs.map(SidebarItem.part))
+                        }
+                        .help("Select this body's parts")
+                    }
                 }
-                Button("Select Parts") {
-                    model.selection = Set(body.partIDs.map(SidebarItem.part))
-                }
-            }
-            Section("Body Frame") {
-                FrameEditor(target: .body(bodyID), document: $document, model: model)
             }
             Section {
-                MassPropertiesView(properties: summary.expressed(in: body.frame).properties)
+                FrameEditor(target: .body(bodyID), document: $document, model: model)
             } header: {
-                Text("Properties in Body Frame")
+                Text("Body Frame")
+            } footer: {
+                Text("Relative to the Libra frame.")
             }
+            MassPropertiesSection(summary: summary.expressed(in: body.frame), frameName: "body frame")
             Section {
                 Button("Delete Body", role: .destructive) {
                     model.deleteBody(bodyID, in: &document)
@@ -122,16 +111,7 @@ private struct PartsInspector: View {
             multipleParts
         }
         bodySection
-        Section {
-            let summary = MassSummary(parts: parts)
-            if summary.unassignedCount > 0 {
-                Label("\(summary.unassignedCount) of \(summary.partCount) without mass", systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-            }
-            MassPropertiesView(properties: summary.expressed(in: document.libraFrame).properties)
-        } header: {
-            Text("Properties in Libra Frame")
-        }
+        MassPropertiesSection(summary: MassSummary(parts: parts).expressed(in: document.libraFrame), frameName: "Libra frame")
     }
 
     // MARK: One part
@@ -140,8 +120,14 @@ private struct PartsInspector: View {
     private func singlePart(_ part: Part, index: Int) -> some View {
         Section("Part") {
             LabeledContent("Name", value: part.name)
-            if part.definitionName != part.name {
-                LabeledContent("Component", value: part.definitionName)
+            LabeledContent("Component") {
+                HStack {
+                    Text(part.definitionName)
+                    Button("Select All") {
+                        model.selection = Set(document.parts.filter { $0.definitionName == part.definitionName }.map { .part($0.id) })
+                    }
+                    .help("Select every instance of \(part.definitionName)")
+                }
             }
             if !part.path.isEmpty {
                 LabeledContent("Assembly", value: part.path.joined(separator: " › "))
@@ -152,9 +138,6 @@ private struct PartsInspector: View {
             if !part.hasVolume {
                 Label("No closed volume (a surface body?). Use an override.", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-            }
-            Button("Select All \(part.definitionName) Instances") {
-                model.selection = Set(document.parts.filter { $0.definitionName == part.definitionName }.map { .part($0.id) })
             }
         }
         Section("Mass") {
@@ -183,7 +166,7 @@ private struct PartsInspector: View {
             } header: {
                 Text("Override Frame")
             } footer: {
-                Text("The center of mass and inertia above are entered in this frame, e.g. a datasheet's axes.")
+                Text("The override values are in this frame, e.g. a datasheet's axes. Relative to the Libra frame.")
             }
         }
     }
@@ -237,17 +220,22 @@ private struct PartsInspector: View {
 
     @ViewBuilder
     private var multipleParts: some View {
-        Section("\(parts.count) Parts") {
-            NumberField(title: "Mass of each", value: $massForEach, unit: units.mass.symbol)
+        Section {
+            NumberField(title: "Mass of Each", value: $massForEach, unit: units.mass.symbol)
             HStack {
-                Button("Set Measured Mass") {
+                Spacer()
+                Button("Clear") {
+                    setMass(.unassigned)
+                }
+                .help("Remove the mass from all \(parts.count) parts")
+                Button("Apply") {
                     setMass(.measured(units.mass.toSI(massForEach)))
                 }
                 .disabled(massForEach <= 0)
-                Button("Clear Mass") {
-                    setMass(.unassigned)
-                }
+                .help("Give each of the \(parts.count) parts this measured mass")
             }
+        } header: {
+            Text("Mass of \(parts.count) Parts")
         }
     }
 
@@ -257,29 +245,39 @@ private struct PartsInspector: View {
 
     // MARK: Bodies
 
-    @ViewBuilder
+    private enum BodyChoice: Hashable {
+        case none, mixed, new
+        case body(UUID)
+    }
+
     private var bodySection: some View {
-        Section("Body") {
-            let memberships = Set(document.bodies.filter { !Set($0.partIDs).isDisjoint(with: partIDs) }.map(\.name))
-            LabeledContent("In", value: memberships.isEmpty ? "None" : memberships.sorted().joined(separator: ", "))
-            HStack {
-                Button("New Body") {
-                    model.createBody(in: &document)
+        Section {
+            Picker("Body", selection: bodyChoice) {
+                Text("None").tag(BodyChoice.none)
+                ForEach(document.bodies) { body in
+                    Text(body.name).tag(BodyChoice.body(body.id))
                 }
-                .help("Make a body from the selected parts")
-                if !document.bodies.isEmpty {
-                    Menu("Add to") {
-                        ForEach(document.bodies) { body in
-                            Button(body.name) { document.addParts(partIDs, toBody: body.id) }
-                        }
-                    }
-                    .fixedSize()
+                if bodyChoice.wrappedValue == .mixed {
+                    Text("Multiple").tag(BodyChoice.mixed)
                 }
-                if !memberships.isEmpty {
-                    Button("Remove") {
-                        document.removeFromBodies(partIDs)
-                    }
-                }
+                Divider()
+                Text("New Body").tag(BodyChoice.new)
+            }
+            .help("The rigid body these parts belong to")
+        }
+    }
+
+    private var bodyChoice: Binding<BodyChoice> {
+        Binding {
+            let bodies = Set(partIDs.map { document.body(containing: $0)?.id })
+            guard bodies.count == 1, let only = bodies.first else { return .mixed }
+            return only.map(BodyChoice.body) ?? .none
+        } set: { choice in
+            switch choice {
+            case .none: document.removeFromBodies(partIDs)
+            case .body(let id): document.addParts(partIDs, toBody: id)
+            case .new: model.createBody(in: &document)
+            case .mixed: break
             }
         }
     }

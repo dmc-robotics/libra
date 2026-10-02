@@ -1,46 +1,47 @@
 import LibraKit
 import SwiftUI
 
-/// Mass, center of mass and the inertia tensor, in the current display units.
+/// Form rows for mass, center of mass and the inertia tensor, in the current display units.
 struct MassPropertiesView: View {
     let properties: MassProperties
     @DisplayUnitsSetting private var units
 
     var body: some View {
-        Grid(alignment: .trailing, horizontalSpacing: 10, verticalSpacing: 4) {
-            GridRow {
-                Text("Mass").foregroundStyle(.secondary).gridColumnAlignment(.leading)
-                Text(Formatting.number(units.mass.fromSI(properties.mass))).fixedSize()
-                Text(units.mass.symbol).foregroundStyle(.secondary)
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            }
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                ForEach(FrameAxis.allCases, id: \.self) { axis in
-                    Text(axis.name.lowercased()).foregroundStyle(.secondary)
-                }
-            }
-            GridRow {
-                Text("COM").foregroundStyle(.secondary)
-                ForEach(0..<3, id: \.self) { index in
-                    Text(Formatting.number(units.length.fromSI(properties.centerOfMass[index]))).fixedSize()
-                }
-            }
-            Divider().gridCellColumns(4)
-            ForEach(FrameAxis.allCases, id: \.self) { row in
+        let centerOfMass = properties.centerOfMass / units.length.siPerUnit
+        LabeledContent("Mass") {
+            Text("\(Formatting.number(units.mass.fromSI(properties.mass))) \(units.mass.symbol)")
+        }
+        LabeledContent("Center of Mass") {
+            Text("\(Formatting.number(centerOfMass.x)), \(Formatting.number(centerOfMass.y)), \(Formatting.number(centerOfMass.z)) \(units.length.symbol)")
+        }
+        .help("x, y, z")
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Inertia (\(units.inertia.symbol))")
+            Grid(alignment: .trailing, horizontalSpacing: 12, verticalSpacing: 3) {
                 GridRow {
-                    Text("I\(row.name.lowercased())").foregroundStyle(.secondary)
-                    ForEach(FrameAxis.allCases, id: \.self) { column in
-                        Text(Formatting.number(units.inertia.fromSI(inertiaEntry(row, column)))).fixedSize()
+                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                    ForEach(FrameAxis.allCases, id: \.self) { axis in
+                        Text(axis.name.lowercased()).foregroundStyle(.secondary)
+                    }
+                }
+                ForEach(FrameAxis.allCases, id: \.self) { row in
+                    GridRow {
+                        Text(row.name.lowercased()).foregroundStyle(.secondary)
+                        ForEach(FrameAxis.allCases, id: \.self) { column in
+                            Text(Formatting.number(units.inertia.fromSI(inertiaEntry(row, column))))
+                                .gridColumnAlignment(.trailing)
+                        }
                     }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .help("About the center of mass. Off-diagonal values are tensor entries (Ixy = −∫xy dm).")
         }
         .monospacedDigit()
         .lineLimit(1)
-        .font(.callout)
+        // Shrink to fit the inspector rather than forcing it wider (a forced minimum width can loop with the scroll bar)
+        .minimumScaleFactor(Layout.minimumTextScale)
         .textSelection(.enabled)
-        .help("COM in \(units.length.symbol); inertia about the COM in \(units.inertia.symbol), rows and columns X, Y, Z")
     }
 
     /// Entries that are only integration noise next to the largest moment show as 0.
@@ -52,40 +53,35 @@ struct MassPropertiesView: View {
     }
 }
 
-/// The selection's (or whole assembly's) totals over the bottom of the viewer.
-struct TotalsBar: View {
-    let document: LibraDocument
-    let model: DocumentModel
+/// An inspector section with the full mass properties and a copy button.
+struct MassPropertiesSection: View {
+    /// Already expressed in the frame named by `frameName`.
+    let summary: MassSummary
+    let frameName: String
     @DisplayUnitsSetting private var units
 
     var body: some View {
-        let selectedIDs = model.selectedPartIDs(in: document)
-        let summary = MassSummary(parts: selectedIDs.isEmpty ? document.parts : document.parts(selectedIDs))
-        let properties = summary.expressed(in: document.libraFrame).properties
-        let title = selectedIDs.isEmpty ? "Assembly" : "Selection"
-
-        VStack(alignment: .leading, spacing: 6) {
+        Section {
+            if summary.unassignedCount > 0 {
+                Label("\(summary.unassignedCount) of \(summary.partCount) parts without mass", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+            MassPropertiesView(properties: summary.properties)
+        } header: {
             HStack {
-                Text("\(title) · \(summary.partCount) parts").font(.headline)
+                Text("Mass Properties")
                 Spacer()
                 Button {
-                    copyToPasteboard(Formatting.summary(properties, title: "\(title) (Libra frame)", units: units))
+                    copyToPasteboard(Formatting.summary(summary.properties, title: "Mass properties (\(frameName))", units: units))
                 } label: {
-                    Image(systemName: "doc.on.doc")
+                    Label("Copy", systemImage: "doc.on.doc")
+                        .labelStyle(.iconOnly)
                 }
                 .buttonStyle(.borderless)
                 .help("Copy these values")
             }
-            if summary.unassignedCount > 0 {
-                Label("\(summary.unassignedCount) without mass", systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-                    .font(.callout)
-            }
-            MassPropertiesView(properties: properties)
-            Text("Libra frame").font(.caption).foregroundStyle(.secondary)
+        } footer: {
+            Text("In the \(frameName). Inertia is about the center of mass.")
         }
-        .padding(10)
-        .fixedSize()
-        .background(.regularMaterial, in: .rect(cornerRadius: Layout.cornerRadius))
     }
 }

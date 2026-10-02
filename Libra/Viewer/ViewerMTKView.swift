@@ -106,7 +106,8 @@ final class ViewerMTKView: MTKView {
 
     private func updateClearColor() {
         let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        clearColor = isDark ? MTLClearColor(red: 0.15, green: 0.15, blue: 0.17, alpha: 1) : MTLClearColor(red: 0.95, green: 0.95, blue: 0.96, alpha: 1)
+        let background = isDark ? ViewerStyle.darkBackground : ViewerStyle.lightBackground
+        clearColor = MTLClearColor(red: background.x, green: background.y, blue: background.z, alpha: 1)
     }
 
     // MARK: Pointer

@@ -42,6 +42,7 @@ constexpr double angularDeflection = 0.25;
 // Relative accuracy for the exact volume integration
 constexpr double volumeIntegrationTolerance = 1.0e-6;
 constexpr char pathSeparator = '\x1f';
+constexpr const char *unnamed = "Unnamed";
 
 struct PartStorage {
     std::string name;
@@ -360,6 +361,17 @@ void addPart(Context &context, const TDF_Label &label, const TopoDS_Shape &shape
     context.storage->parts.push_back(std::move(part));
 }
 
+// Sibling names must differ, because names and paths are how the outline tells parts and assemblies apart.
+// Repeats get a suffix: "Bracket", "Bracket (2)", ...
+std::string uniqueName(const std::string &name, std::set<std::string> &usedNames) {
+    std::string base = name.empty() ? unnamed : name;
+    std::string candidate = base;
+    for (int number = 2; !usedNames.insert(candidate).second; ++number) {
+        candidate = base + " (" + std::to_string(number) + ")";
+    }
+    return candidate;
+}
+
 void walk(Context &context, const TDF_Label &label, const TopLoc_Location &location, const std::string &name,
           std::vector<std::string> &path, InheritedColor inherited) {
     Quantity_Color color;
@@ -376,6 +388,7 @@ void walk(Context &context, const TDF_Label &label, const TopLoc_Location &locat
     path.push_back(name);
     TDF_LabelSequence components;
     XCAFDoc_ShapeTool::GetComponents(label, components, Standard_False);
+    std::set<std::string> usedNames;
     for (Standard_Integer index = 1; index <= components.Length(); ++index) {
         TDF_Label component = components.Value(index);
         TDF_Label referred;
@@ -390,7 +403,8 @@ void walk(Context &context, const TDF_Label &label, const TopLoc_Location &locat
         if (labelColor(context, component, color)) {
             componentColor = {true, color};
         }
-        walk(context, referred, location * XCAFDoc_ShapeTool::GetLocation(component), componentName, path, componentColor);
+        walk(context, referred, location * XCAFDoc_ShapeTool::GetLocation(component), uniqueName(componentName, usedNames), path,
+             componentColor);
     }
     path.pop_back();
 }
@@ -424,10 +438,11 @@ void importFile(const char *path, Storage &storage) {
 
     TDF_LabelSequence roots;
     context.shapeTool->GetFreeShapes(roots);
+    std::set<std::string> usedNames;
     for (Standard_Integer index = 1; index <= roots.Length(); ++index) {
         std::vector<std::string> assemblyPath;
         TDF_Label root = roots.Value(index);
-        walk(context, root, TopLoc_Location(), labelName(root), assemblyPath, InheritedColor());
+        walk(context, root, TopLoc_Location(), uniqueName(labelName(root), usedNames), assemblyPath, InheritedColor());
     }
     if (storage.parts.empty()) {
         storage.errorMessage = "The STEP file has no parts.";

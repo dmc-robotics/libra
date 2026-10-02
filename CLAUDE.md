@@ -26,7 +26,7 @@ This project is for personal use only and will only be used for hobby purposes. 
 - `LibraKit/`: local Swift package with all non-UI logic; no SwiftUI imports
   - `Sources/StepBridge/`: C++ over OpenCASCADE behind a plain C API (`StepBridge.h`). Reads the XCAF assembly tree, flattens each part instance to file coordinates, meshes it, computes exact unit-density volume properties, and records snap features (face/edge kinds, centers, axes). All output is SI. Catches every OCCT exception.
   - `Sources/StepImport/`: Swift `StepImporter` actor (OCCT settings are global, so imports run one at a time)
-  - `Sources/LibraKit/Model/`: `LibraDocument` (the .libra file: parts, bodies, Libra frame), `Part`, `PartGeometry`, `MassAssignment`, `Frame`, `InertiaTensor`, `DisplayUnits`
+  - `Sources/LibraKit/Model/`: `LibraDocument` (the .libra file: parts, bodies, Libra frame), `DocumentEditing` (every change to a document, plus `FrameTarget`), `Part`, `PartGeometry`, `MassAssignment`, `Frame`, `InertiaTensor`, `DisplayUnits`
   - `Mass/`: combining parts (parallel axis theorem) and re-expressing in frames
   - `View/`: `OrthographicCamera` (navigation math, pixel → ray), `ViewerScene` (what the viewer draws), `MarkerMesh` (screen-sized overlay triangles)
   - `Picking/`: ray picking and `Snapper` (feature under the cursor → origin point or direction)
@@ -36,8 +36,8 @@ This project is for personal use only and will only be used for hobby purposes. 
   - `Views/`: sidebar outline and bodies, inspector (parts, bodies, frames), totals bar, export sheet, settings
   - `Viewer/`: self-contained Metal viewer. The app only talks to `ViewerView` and `ViewerScene`. Shaders are compiled at runtime from `Shaders.swift`, so the Metal Toolchain isn't needed.
   - `Constants.swift`: sizes, colors, preference keys. Use constants for magic numbers.
-- `LibraTests/`: `DocumentModel` tests
-- `Tools/generate_fixtures.cpp`: writes `LibraKit/Tests/StepImportTests/Fixtures/assembly.step` (known boxes and a cylinder; the compile command is at the top of the file)
+- `LibraTests/`: `DocumentModel` tests (selection, keys, scene)
+- `Tools/generate_fixtures.cpp`: writes the STEP fixtures in `LibraKit/Tests/StepImportTests/Fixtures/` (known boxes and a cylinder; duplicate sibling names). The compile command is at the top of the file.
 
 ## Conventions
 
@@ -46,6 +46,8 @@ This project is for personal use only and will only be used for hobby purposes. 
 - A `.libra` file is self-contained JSON (meshes as base64). It keeps no link to the STEP file; a changed CAD model means a new import.
 - The Libra frame is the reference for totals and export; bodies have their own frames. Standard views and orbiting use the Libra frame's Z as up.
 - Keep logic in LibraKit and test it there. Views stay thin.
+- Change a document only through the `LibraDocument` methods in `DocumentEditing.swift` (bodies, frames, mass). They enforce the rules, e.g. a part belongs to at most one body. Views may set plain fields such as a body's name directly.
+- The importer makes sibling names unique ("Bracket", "Bracket (2)"), so a part's assembly path plus name identifies it.
 
 ## Commands
 

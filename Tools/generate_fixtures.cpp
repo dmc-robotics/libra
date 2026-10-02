@@ -10,6 +10,10 @@
 //   "Box:2"       same box rotated 45° about Z, then moved to (100, 50, 0)
 //   "Sub:1"       subassembly moved to (0, 0, 50), containing
 //     "Cylinder:1"  radius 5, height 40 along Z, base centered on the subassembly origin
+//
+// duplicate_names.step, root assembly "Duplicates", where siblings share names:
+//   "Part", "Part"  two box instances
+//   "Group", "Group"  two instances of a subassembly holding one box, "Box"
 
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
@@ -39,15 +43,19 @@ TopLoc_Location translation(double x, double y, double z) {
     return TopLoc_Location(transform);
 }
 
-} // namespace
-
-int main(int argumentCount, char **arguments) {
-    if (argumentCount != 2) {
-        std::cerr << "usage: generate_fixtures <output directory>\n";
-        return 1;
+bool write(const Handle(TDocStd_Document) &document, const std::string &path) {
+    STEPCAFControl_Writer writer;
+    writer.SetNameMode(Standard_True);
+    writer.SetColorMode(Standard_True);
+    if (!writer.Transfer(document) || writer.Write(path.c_str()) != IFSelect_RetDone) {
+        std::cerr << "couldn't write " << path << "\n";
+        return false;
     }
-    std::string directory = arguments[1];
+    std::cout << "wrote " << path << "\n";
+    return true;
+}
 
+bool writeAssembly(const std::string &path) {
     Handle(TDocStd_Document) document;
     XCAFApp_Application::GetApplication()->NewDocument("MDTV-XCAF", document);
     XCAFDoc_DocumentTool::SetLengthUnit(document, 0.001);
@@ -74,15 +82,39 @@ int main(int argumentCount, char **arguments) {
     setName(shapes->AddComponent(root, box, TopLoc_Location(rotatedAndMoved)), "Box:2");
     setName(shapes->AddComponent(root, subassembly, translation(0.0, 0.0, 50.0)), "Sub:1");
     shapes->UpdateAssemblies();
+    return write(document, path);
+}
 
-    STEPCAFControl_Writer writer;
-    writer.SetNameMode(Standard_True);
-    writer.SetColorMode(Standard_True);
-    std::string path = directory + "/assembly.step";
-    if (!writer.Transfer(document) || writer.Write(path.c_str()) != IFSelect_RetDone) {
-        std::cerr << "couldn't write " << path << "\n";
+bool writeDuplicateNames(const std::string &path) {
+    Handle(TDocStd_Document) document;
+    XCAFApp_Application::GetApplication()->NewDocument("MDTV-XCAF", document);
+    XCAFDoc_DocumentTool::SetLengthUnit(document, 0.001);
+    Handle(XCAFDoc_ShapeTool) shapes = XCAFDoc_DocumentTool::ShapeTool(document->Main());
+
+    TDF_Label box = shapes->AddShape(BRepPrimAPI_MakeBox(10.0, 10.0, 10.0).Shape(), Standard_False);
+    setName(box, "Box");
+    TDF_Label group = shapes->NewShape();
+    setName(group, "Group");
+    setName(shapes->AddComponent(group, box, TopLoc_Location()), "Box");
+
+    TDF_Label root = shapes->NewShape();
+    setName(root, "Duplicates");
+    setName(shapes->AddComponent(root, box, TopLoc_Location()), "Part");
+    setName(shapes->AddComponent(root, box, translation(20.0, 0.0, 0.0)), "Part");
+    setName(shapes->AddComponent(root, group, translation(0.0, 20.0, 0.0)), "Group");
+    setName(shapes->AddComponent(root, group, translation(20.0, 20.0, 0.0)), "Group");
+    shapes->UpdateAssemblies();
+    return write(document, path);
+}
+
+} // namespace
+
+int main(int argumentCount, char **arguments) {
+    if (argumentCount != 2) {
+        std::cerr << "usage: generate_fixtures <output directory>\n";
         return 1;
     }
-    std::cout << "wrote " << path << "\n";
-    return 0;
+    std::string directory = arguments[1];
+    bool written = writeAssembly(directory + "/assembly.step") && writeDuplicateNames(directory + "/duplicate_names.step");
+    return written ? 0 : 1;
 }

@@ -52,27 +52,9 @@ public struct MassReport: Sendable {
             PartEntry(
                 name: part.name,
                 path: part.path,
-                assignment: part.mass.name,
+                assignment: part.mass.kind.rawValue,
                 properties: part.massProperties?.expressed(in: libraFrame)
             )
-        }
-    }
-}
-
-extension MassSummary {
-    func expressed(in frame: Frame) -> MassSummary {
-        var copy = self
-        copy.properties = properties.mass > 0 ? properties.expressed(in: frame) : properties
-        return copy
-    }
-}
-
-extension MassAssignment {
-    public var name: String {
-        switch self {
-        case .unassigned: "unassigned"
-        case .measured: "measured"
-        case .override: "override"
         }
     }
 }

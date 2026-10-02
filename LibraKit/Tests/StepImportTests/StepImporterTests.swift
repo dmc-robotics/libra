@@ -120,3 +120,14 @@ func expectClose(_ actual: InertiaTensor, _ expected: InertiaTensor, relative: D
     let largest = [difference.columns.0, difference.columns.1, difference.columns.2].map { simd_reduce_max(simd_abs($0)) }.max() ?? 0
     #expect(largest <= scale * relative, "\(actual) ≠ \(expected)", sourceLocation: sourceLocation)
 }
+
+/// Fixtures/duplicate_names.step has two sibling subassemblies both named "Group".
+@Suite struct DuplicateNameTests {
+    @Test func siblingNamesAreMadeUnique() async throws {
+        let url = try #require(Bundle.module.url(forResource: "duplicate_names", withExtension: "step", subdirectory: "Fixtures"))
+        let parts = try await StepImporter.shared.importParts(from: url)
+        let occurrences = parts.map { $0.path + [$0.name] }
+        #expect(Set(occurrences).count == parts.count)
+        #expect(Set(parts.map(\.path)).isSuperset(of: [["Duplicates", "Group"], ["Duplicates", "Group (2)"]]))
+    }
+}

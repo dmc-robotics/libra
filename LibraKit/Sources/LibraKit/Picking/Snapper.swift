@@ -16,7 +16,7 @@ public struct Snap: Hashable, Sendable {
             case .surfacePoint: "Point on surface"
             case .lineDirection: "Edge direction"
             case .circleNormal: "Circle axis"
-            case .axisDirection: "FrameAxis"
+            case .axisDirection: "Axis"
             case .faceNormal: "Face normal"
             }
         }

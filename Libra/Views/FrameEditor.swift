@@ -18,7 +18,7 @@ struct FrameEditor: View {
     }
 
     var body: some View {
-        if let frame = model.frame(for: target, in: document) {
+        if let frame = document.frame(for: target) {
             LabeledContent("Origin") {
                 Button(model.tool == .pickOrigin(target) ? "Picking…" : "Pick…") {
                     model.tool = model.tool == .pickOrigin(target) ? .select : .pickOrigin(target)
@@ -66,7 +66,7 @@ struct FrameEditor: View {
                     if target != .libra {
                         Button("Match Libra Frame") { update(document.libraFrame) }
                     }
-                    if case .body(let id) = target, let body = document.bodies.first(where: { $0.id == id }) {
+                    if case .body(let id) = target, let body = document.body(id) {
                         let summary = MassSummary(parts: document.parts(body.partIDs))
                         Button("Origin at Center of Mass") { update(frame.moved(to: summary.properties.centerOfMass)) }
                             .disabled(summary.properties.mass <= 0)
@@ -82,7 +82,7 @@ struct FrameEditor: View {
     }
 
     private func update(_ frame: Frame) {
-        model.setFrame(frame, for: target, in: &document)
+        document.setFrame(frame, for: target)
     }
 
     private func originBinding(_ frame: Frame, _ axis: FrameAxis) -> Binding<Double> {

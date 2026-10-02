@@ -61,7 +61,7 @@ struct TotalsBar: View {
     var body: some View {
         let selectedIDs = model.selectedPartIDs(in: document)
         let summary = MassSummary(parts: selectedIDs.isEmpty ? document.parts : document.parts(selectedIDs))
-        let properties = summary.properties.mass > 0 ? summary.properties.expressed(in: document.libraFrame) : summary.properties
+        let properties = summary.expressed(in: document.libraFrame).properties
         let title = selectedIDs.isEmpty ? "Assembly" : "Selection"
 
         VStack(alignment: .leading, spacing: 6) {

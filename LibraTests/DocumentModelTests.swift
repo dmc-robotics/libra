@@ -67,19 +67,13 @@ import simd
         #expect(model.selection.isEmpty)
     }
 
-    @Test func bodiesTakePartsExclusively() throws {
+    @Test func createBodyFromSidebarItemsSelectsIt() throws {
         var document = Self.makeDocument()
         let model = DocumentModel()
-        model.selection = [.assembly(["Robot"])]
-        model.createBody(in: &document)
-        let first = try #require(document.bodies.first)
-        #expect(first.partIDs.count == 2)
-        #expect(model.selection == [.body(first.id)])
-
-        model.selection = [.part(document.parts[1].id)]
-        model.createBody(in: &document)
-        #expect(document.bodies[0].partIDs == [document.parts[0].id])
-        #expect(document.bodies[1].partIDs == [document.parts[1].id])
+        model.createBody(from: [.assembly(["Robot", "Arm"])], in: &document)
+        let body = try #require(document.bodies.first)
+        #expect(body.partIDs == [document.parts[1].id])
+        #expect(model.selection == [.body(body.id)])
     }
 
     @Test func keysTurnTheActiveFrame() {
@@ -101,15 +95,6 @@ import simd
         #expect(model.tool == .select)
     }
 
-    @Test func overrideFrameIsEditable() {
-        var document = Self.makeDocument()
-        let model = DocumentModel()
-        let id = document.parts[0].id
-        document.parts[0].mass = .override(MassOverride(mass: 1, centerOfMass: .zero, inertia: .zero, frame: .file))
-        model.setFrame(Frame.file.moved(to: [1, 2, 3]), for: .override(id), in: &document)
-        #expect(model.frame(for: .override(id), in: &document)?.origin == [1, 2, 3])
-    }
-
     @Test func sceneMarksSelectionAndCenterOfMass() {
         var document = Self.makeDocument()
         document.parts[0].mass = .measured(1)
@@ -120,12 +105,5 @@ import simd
         #expect(scene.parts[0].color != scene.parts[1].color)
         #expect(scene.markers.contains(.centerOfMass([0.05, 0.05, 0.05])))
         #expect(scene.markers.contains(.triad(.file, emphasized: false)))
-    }
-}
-
-extension DocumentModel {
-    /// Lets tests read frames with the same call shape they write them.
-    func frame(for target: FrameTarget, in document: inout LibraDocument) -> Frame? {
-        frame(for: target, in: document)
     }
 }

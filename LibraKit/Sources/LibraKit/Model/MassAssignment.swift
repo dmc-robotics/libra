@@ -5,6 +5,20 @@ public enum MassAssignment: Codable, Hashable, Sendable {
     case measured(Double)
     /// Datasheet values that ignore the geometry.
     case override(MassOverride)
+
+    public enum Kind: String, CaseIterable, Identifiable, Sendable {
+        case unassigned, measured, override
+
+        public var id: Self { self }
+    }
+
+    public var kind: Kind {
+        switch self {
+        case .unassigned: .unassigned
+        case .measured: .measured
+        case .override: .override
+        }
+    }
 }
 
 /// Mass, center of mass and inertia entered by hand, expressed in `frame`.

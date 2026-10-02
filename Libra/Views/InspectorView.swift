@@ -81,7 +81,7 @@ private struct BodyInspector: View {
                 FrameEditor(target: .body(bodyID), document: $document, model: model)
             }
             Section {
-                MassPropertiesView(properties: summary.properties.mass > 0 ? summary.properties.expressed(in: body.frame) : summary.properties)
+                MassPropertiesView(properties: summary.expressed(in: body.frame).properties)
             } header: {
                 Text("Properties in Body Frame")
             }
@@ -96,18 +96,12 @@ private struct BodyInspector: View {
 
 // MARK: Parts
 
-private enum MassKind: String, CaseIterable, Identifiable {
-    case unassigned = "None"
-    case measured = "Measured"
-    case override = "Override"
-
-    var id: Self { self }
-
-    init(_ assignment: MassAssignment) {
-        switch assignment {
-        case .unassigned: self = .unassigned
-        case .measured: self = .measured
-        case .override: self = .override
+private extension MassAssignment.Kind {
+    var title: String {
+        switch self {
+        case .unassigned: "None"
+        case .measured: "Measured"
+        case .override: "Override"
         }
     }
 }
@@ -134,7 +128,7 @@ private struct PartsInspector: View {
                 Label("\(summary.unassignedCount) of \(summary.partCount) without mass", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
             }
-            MassPropertiesView(properties: summary.properties.mass > 0 ? summary.properties.expressed(in: document.libraFrame) : summary.properties)
+            MassPropertiesView(properties: summary.expressed(in: document.libraFrame).properties)
         } header: {
             Text("Properties in Libra Frame")
         }
@@ -164,9 +158,9 @@ private struct PartsInspector: View {
             }
         }
         Section("Mass") {
-            Picker("Source", selection: kindBinding(index)) {
-                ForEach(MassKind.allCases) { kind in
-                    Text(kind.rawValue).tag(kind)
+            Picker("Source", selection: kindBinding(part.id)) {
+                ForEach(MassAssignment.Kind.allCases) { kind in
+                    Text(kind.title).tag(kind)
                 }
             }
             .pickerStyle(.segmented)
@@ -194,28 +188,11 @@ private struct PartsInspector: View {
         }
     }
 
-    private func kindBinding(_ index: Int) -> Binding<MassKind> {
+    private func kindBinding(_ partID: UUID) -> Binding<MassAssignment.Kind> {
         Binding {
-            MassKind(document.parts[index].mass)
+            document.part(partID)?.mass.kind ?? .unassigned
         } set: { kind in
-            let part = document.parts[index]
-            let current = part.massProperties
-            switch kind {
-            case .unassigned:
-                document.parts[index].mass = .unassigned
-            case .measured:
-                document.parts[index].mass = .measured(current?.mass ?? 0)
-            case .override:
-                // Start from the current values, in the Libra frame
-                let frame = document.libraFrame
-                let local = current?.expressed(in: frame)
-                document.parts[index].mass = .override(MassOverride(
-                    mass: local?.mass ?? 0,
-                    centerOfMass: local?.centerOfMass ?? frame.localPoint(part.volumeProperties.centroid),
-                    inertia: local?.inertia ?? .zero,
-                    frame: frame
-                ))
-            }
+            document.changeMassKind(of: partID, to: kind)
         }
     }
 
@@ -275,9 +252,7 @@ private struct PartsInspector: View {
     }
 
     private func setMass(_ assignment: MassAssignment) {
-        for index in document.parts.indices where partIDs.contains(document.parts[index].id) {
-            document.parts[index].mass = assignment
-        }
+        document.setMass(assignment, forParts: partIDs)
     }
 
     // MARK: Bodies
@@ -295,23 +270,17 @@ private struct PartsInspector: View {
                 if !document.bodies.isEmpty {
                     Menu("Add to") {
                         ForEach(document.bodies) { body in
-                            Button(body.name) { add(to: body.id) }
+                            Button(body.name) { document.addParts(partIDs, toBody: body.id) }
                         }
                     }
                     .fixedSize()
                 }
                 if !memberships.isEmpty {
                     Button("Remove") {
-                        model.removeFromBodies(partIDs, in: &document)
+                        document.removeFromBodies(partIDs)
                     }
                 }
             }
         }
-    }
-
-    private func add(to bodyID: UUID) {
-        model.removeFromBodies(partIDs, in: &document)
-        guard let index = document.bodies.firstIndex(where: { $0.id == bodyID }) else { return }
-        document.bodies[index].partIDs += document.parts.map(\.id).filter(partIDs.contains)
     }
 }

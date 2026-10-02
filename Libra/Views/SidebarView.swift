@@ -33,8 +33,7 @@ struct SidebarView: View {
         .contextMenu(forSelectionType: SidebarItem.self) { items in
             if items.contains(where: { if case .body = $0 { false } else { true } }) {
                 Button("New Body from Selection") {
-                    model.selection = items
-                    model.createBody(in: &document)
+                    model.createBody(from: items, in: &document)
                 }
             }
             if items.count == 1, case .body(let id) = items.first {

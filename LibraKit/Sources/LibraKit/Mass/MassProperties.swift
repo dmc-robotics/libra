@@ -65,4 +65,14 @@ public struct MassSummary: Hashable, Sendable {
         partCount = parts.count
         unassignedCount = parts.count - assigned.count
     }
+
+    /// Re-expressed in `frame` (these totals must be in file coordinates). With no mass there's no
+    /// center of mass to move, so the zero properties stay as they are.
+    public func expressed(in frame: Frame) -> MassSummary {
+        var copy = self
+        if properties.mass > 0 {
+            copy.properties = properties.expressed(in: frame)
+        }
+        return copy
+    }
 }

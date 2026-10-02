@@ -11,14 +11,6 @@ enum SidebarItem: Hashable {
     case body(UUID)
 }
 
-/// A frame the frame tool can edit.
-enum FrameTarget: Hashable {
-    case libra
-    case body(UUID)
-    /// The frame a part's override values are entered in.
-    case override(UUID)
-}
-
 enum Tool: Hashable {
     case select
     case pickOrigin(FrameTarget)
@@ -79,8 +71,13 @@ final class DocumentModel {
     // MARK: Selection
 
     func selectedPartIDs(in document: LibraDocument) -> Set<UUID> {
+        partIDs(of: selection, in: document)
+    }
+
+    /// The parts that sidebar items stand for: the part itself, everything in an assembly, or a body's members.
+    func partIDs(of items: Set<SidebarItem>, in document: LibraDocument) -> Set<UUID> {
         var ids: Set<UUID> = []
-        for item in selection {
+        for item in items {
             switch item {
             case .part(let id):
                 ids.insert(id)
@@ -89,7 +86,7 @@ final class DocumentModel {
                     ids.insert(part.id)
                 }
             case .body(let id):
-                ids.formUnion(document.bodies.first { $0.id == id }?.partIDs ?? [])
+                ids.formUnion(document.body(id)?.partIDs ?? [])
             }
         }
         return ids
@@ -98,7 +95,7 @@ final class DocumentModel {
     /// The body, when exactly one body is selected.
     func selectedBody(in document: LibraDocument) -> Body? {
         guard selection.count == 1, case .body(let id) = selection.first else { return nil }
-        return document.bodies.first { $0.id == id }
+        return document.body(id)
     }
 
     static func outline(for parts: [Part]) -> [OutlineNode] {
@@ -132,34 +129,6 @@ final class DocumentModel {
             part.path.reduce(root) { $0.child(named: $1) }.parts.append(part)
         }
         return root.nodes
-    }
-
-    // MARK: Frames
-
-    func frame(for target: FrameTarget, in document: LibraDocument) -> Frame? {
-        switch target {
-        case .libra:
-            document.libraFrame
-        case .body(let id):
-            document.bodies.first { $0.id == id }?.frame
-        case .override(let id):
-            if case .override(let values) = document.part(id)?.mass { values.frame } else { nil }
-        }
-    }
-
-    func setFrame(_ frame: Frame, for target: FrameTarget, in document: inout LibraDocument) {
-        switch target {
-        case .libra:
-            document.libraFrame = frame
-        case .body(let id):
-            guard let index = document.bodies.firstIndex(where: { $0.id == id }) else { return }
-            document.bodies[index].frame = frame
-        case .override(let id):
-            guard let index = document.parts.firstIndex(where: { $0.id == id }),
-                  case .override(var values) = document.parts[index].mass else { return }
-            values.frame = frame
-            document.parts[index].mass = .override(values)
-        }
     }
 
     // MARK: Viewer input
@@ -206,17 +175,17 @@ final class DocumentModel {
                 selection = [item]
             }
         case .pickOrigin(let target):
-            guard let snap = snap(for: pointer, in: document), let frame = frame(for: target, in: document) else { return }
-            setFrame(frame.moved(to: snap.point), for: target, in: &document)
+            guard let snap = snap(for: pointer, in: document), let frame = document.frame(for: target) else { return }
+            document.setFrame(frame.moved(to: snap.point), for: target)
             tool = .select
         case .pickDirection(let target, let axis):
             guard let snap = snap(for: pointer, in: document), var direction = snap.direction,
-                  let frame = frame(for: target, in: document) else { return }
+                  let frame = document.frame(for: target) else { return }
             // Feature directions have no meaningful sign, so keep the one nearest the axis' current direction
             if simd_dot(direction, frame.axis(axis)) < 0 {
                 direction = -direction
             }
-            setFrame(frame.aligning(axis, to: direction), for: target, in: &document)
+            document.setFrame(frame.aligning(axis, to: direction), for: target)
             tool = .select
         }
     }
@@ -229,7 +198,7 @@ final class DocumentModel {
             tool = .select
             return true
         }
-        guard let target = activeFrameTarget(in: document), let frame = frame(for: target, in: document) else { return false }
+        guard let target = activeFrameTarget(in: document), let frame = document.frame(for: target) else { return false }
         let axis: FrameAxis? = switch characters.lowercased() {
         case "x": .x
         case "y": .y
@@ -237,7 +206,7 @@ final class DocumentModel {
         default: nil
         }
         guard let axis else { return false }
-        setFrame(frame.rotatedQuarterTurn(about: axis, clockwise: shift), for: target, in: &document)
+        document.setFrame(frame.rotatedQuarterTurn(about: axis, clockwise: shift), for: target)
         return true
     }
 
@@ -251,24 +220,15 @@ final class DocumentModel {
 
     // MARK: Bodies
 
-    /// Makes a body from the selected parts, taking them out of any other body.
-    func createBody(in document: inout LibraDocument) {
-        let partIDs = document.parts.map(\.id).filter(selectedPartIDs(in: document).contains)
-        guard !partIDs.isEmpty else { return }
-        removeFromBodies(Set(partIDs), in: &document)
-        let body = Body(name: "Body \(document.bodies.count + 1)", partIDs: partIDs, frame: document.libraFrame)
-        document.bodies.append(body)
-        selection = [.body(body.id)]
-    }
-
-    func removeFromBodies(_ partIDs: Set<UUID>, in document: inout LibraDocument) {
-        for index in document.bodies.indices {
-            document.bodies[index].partIDs.removeAll(where: partIDs.contains)
+    /// Makes a body from the parts `items` stand for (the selection by default) and selects it.
+    func createBody(from items: Set<SidebarItem>? = nil, in document: inout LibraDocument) {
+        if let id = document.createBody(partIDs: partIDs(of: items ?? selection, in: document)) {
+            selection = [.body(id)]
         }
     }
 
     func deleteBody(_ id: UUID, in document: inout LibraDocument) {
-        document.bodies.removeAll { $0.id == id }
+        document.deleteBody(id)
         selection.remove(.body(id))
     }
 
@@ -314,7 +274,7 @@ final class DocumentModel {
         var markers: [Marker] = []
         let target = activeFrameTarget(in: document)
         markers.append(.triad(document.libraFrame, emphasized: target == .libra))
-        if let target, target != .libra, let frame = frame(for: target, in: document) {
+        if let target, target != .libra, let frame = document.frame(for: target) {
             markers.append(.triad(frame, emphasized: true))
         }
         let summary = MassSummary(parts: selectedIDs.isEmpty ? document.parts : document.parts(selectedIDs))

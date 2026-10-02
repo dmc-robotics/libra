@@ -1,0 +1,84 @@
+# Generate Libra.xcodeproj with `xcodegen generate`. Edit this file, not the project.
+name: Libra
+
+options:
+  bundleIdPrefix: com.libra
+  deploymentTarget:
+    macOS: "27.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Sign to Run Locally
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+
+packages:
+  LibraKit:
+    path: LibraKit
+
+targets:
+  Libra:
+    type: application
+    platform: macOS
+    sources:
+      - Libra
+    dependencies:
+      - package: LibraKit
+        product: LibraKit
+      - package: LibraKit
+        product: StepImport
+    info:
+      path: Libra/Info.plist
+      properties:
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Libra Document
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes: [com.libra.document]
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.libra.document
+            UTTypeDescription: Libra Document
+            UTTypeConformsTo: [public.data, public.content]
+            UTTypeTagSpecification:
+              public.filename-extension: [libra]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.libra.mac
+        PRODUCT_NAME: Libra
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Libra
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        # Links OpenCASCADE dylibs from Homebrew, which a hardened runtime would refuse to load
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: NO
+
+  LibraTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - LibraTests
+    dependencies:
+      - target: Libra
+      - package: LibraKit
+        product: LibraKit
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.libra.mac.tests
+
+schemes:
+  Libra:
+    build:
+      targets:
+        Libra: all
+        LibraTests: [test]
+    test:
+      targets:
+        - LibraTests

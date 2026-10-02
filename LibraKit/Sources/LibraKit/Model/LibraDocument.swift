@@ -6,14 +6,14 @@ public struct LibraDocument: Codable, Hashable, Sendable {
 
     public var formatVersion: Int
     public var parts: [Part]
-    public var bodies: [Body]
+    public var groups: [PartGroup]
     /// The reference frame for totals, display and export. Starts as the STEP file's frame.
     public var libraFrame: Frame
 
-    public init(parts: [Part] = [], bodies: [Body] = [], libraFrame: Frame = .file) {
+    public init(parts: [Part] = [], groups: [PartGroup] = [], libraFrame: Frame = .file) {
         formatVersion = Self.currentFormatVersion
         self.parts = parts
-        self.bodies = bodies
+        self.groups = groups
         self.libraFrame = libraFrame
     }
 
@@ -59,7 +59,7 @@ public struct LibraDocument: Codable, Hashable, Sendable {
 }
 
 /// A named group of parts that moves as one rigid body (a robot link), with its own frame.
-public struct Body: Codable, Hashable, Identifiable, Sendable {
+public struct PartGroup: Codable, Hashable, Identifiable, Sendable {
     public let id: UUID
     public var name: String
     public var partIDs: [UUID]

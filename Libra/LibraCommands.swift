@@ -9,8 +9,8 @@ struct DocumentActions {
     var fit: () -> Void
     var look: (StandardView) -> Void
     var colorMode: Binding<ColorMode>
-    var newBody: (() -> Void)?
-    var deleteBody: (() -> Void)?
+    var newGroup: (() -> Void)?
+    var deleteGroup: (() -> Void)?
 }
 
 extension FocusedValues {
@@ -31,11 +31,11 @@ struct LibraCommands: Commands {
         }
         CommandGroup(after: .pasteboard) {
             Divider()
-            Button("New Body from Selection") { actions?.newBody?() }
+            Button("New Group from Selection") { actions?.newGroup?() }
                 .keyboardShortcut("g", modifiers: .command)
-                .disabled(actions?.newBody == nil)
-            Button("Delete Body") { actions?.deleteBody?() }
-                .disabled(actions?.deleteBody == nil)
+                .disabled(actions?.newGroup == nil)
+            Button("Delete Group") { actions?.deleteGroup?() }
+                .disabled(actions?.deleteGroup == nil)
         }
         CommandGroup(before: .toolbar) {
             Button("Zoom to Fit") { actions?.fit() }

@@ -1,15 +1,15 @@
 import LibraKit
 import SwiftUI
 
-/// Shows whatever is selected: one body, some parts, or (with nothing selected) the Libra frame.
+/// Shows whatever is selected: one group, some parts, or (with nothing selected) the Libra frame.
 struct InspectorView: View {
     @Binding var document: LibraDocument
     @Bindable var model: DocumentModel
 
     var body: some View {
         Form {
-            if let body = model.selectedBody(in: document) {
-                BodyInspector(bodyID: body.id, document: $document, model: model)
+            if let group = model.selectedGroup(in: document) {
+                GroupInspector(groupID: group.id, document: $document, model: model)
             } else {
                 let partIDs = model.selectedPartIDs(in: document)
                 if partIDs.isEmpty {
@@ -39,44 +39,44 @@ private struct LibraFrameInspector: View {
     }
 }
 
-// MARK: Bodies
+// MARK: Groups
 
-private struct BodyInspector: View {
-    let bodyID: UUID
+private struct GroupInspector: View {
+    let groupID: UUID
     @Binding var document: LibraDocument
     @Bindable var model: DocumentModel
 
     private var index: Int? {
-        document.bodies.firstIndex { $0.id == bodyID }
+        document.groups.firstIndex { $0.id == groupID }
     }
 
     var body: some View {
         if let index {
-            let body = document.bodies[index]
-            let summary = MassSummary(parts: document.parts(body.partIDs))
-            Section("Body") {
-                TextField("Name", text: $document.bodies[index].name)
+            let group = document.groups[index]
+            let summary = MassSummary(parts: document.parts(group.partIDs))
+            Section("Group") {
+                TextField("Name", text: $document.groups[index].name)
                 LabeledContent("Parts") {
                     HStack {
                         Text("\(summary.partCount)")
                         Button("Select") {
-                            model.selection = Set(body.partIDs.map(SidebarItem.part))
+                            model.selection = Set(group.partIDs.map(SidebarItem.part))
                         }
-                        .help("Select this body's parts")
+                        .help("Select this group's parts")
                     }
                 }
             }
             Section {
-                FrameEditor(target: .body(bodyID), document: $document, model: model)
+                FrameEditor(target: .group(groupID), document: $document, model: model)
             } header: {
-                Text("Body Frame")
+                Text("Group Frame")
             } footer: {
                 Text("Relative to the Libra frame.")
             }
-            MassPropertiesSection(summary: summary.expressed(in: body.frame), frameName: "body frame")
+            MassPropertiesSection(summary: summary.expressed(in: group.frame), frameName: "group frame")
             Section {
-                Button("Delete Body", role: .destructive) {
-                    model.deleteBody(bodyID, in: &document)
+                Button("Delete Group", role: .destructive) {
+                    model.deleteGroup(groupID, in: &document)
                 }
             }
         }
@@ -110,7 +110,7 @@ private struct PartsInspector: View {
         } else {
             multipleParts
         }
-        bodySection
+        groupSection
         MassPropertiesSection(summary: MassSummary(parts: parts).expressed(in: document.libraFrame), frameName: "Libra frame")
     }
 
@@ -243,40 +243,40 @@ private struct PartsInspector: View {
         document.setMass(assignment, forParts: partIDs)
     }
 
-    // MARK: Bodies
+    // MARK: Groups
 
-    private enum BodyChoice: Hashable {
+    private enum GroupChoice: Hashable {
         case none, mixed, new
-        case body(UUID)
+        case group(UUID)
     }
 
-    private var bodySection: some View {
+    private var groupSection: some View {
         Section {
-            Picker("Body", selection: bodyChoice) {
-                Text("None").tag(BodyChoice.none)
-                ForEach(document.bodies) { body in
-                    Text(body.name).tag(BodyChoice.body(body.id))
+            Picker("Group", selection: groupChoice) {
+                Text("None").tag(GroupChoice.none)
+                ForEach(document.groups) { group in
+                    Text(group.name).tag(GroupChoice.group(group.id))
                 }
-                if bodyChoice.wrappedValue == .mixed {
-                    Text("Multiple").tag(BodyChoice.mixed)
+                if groupChoice.wrappedValue == .mixed {
+                    Text("Multiple").tag(GroupChoice.mixed)
                 }
                 Divider()
-                Text("New Body").tag(BodyChoice.new)
+                Text("New Group").tag(GroupChoice.new)
             }
-            .help("The rigid body these parts belong to")
+            .help("The group these parts belong to, which moves as one rigid body")
         }
     }
 
-    private var bodyChoice: Binding<BodyChoice> {
+    private var groupChoice: Binding<GroupChoice> {
         Binding {
-            let bodies = Set(partIDs.map { document.body(containing: $0)?.id })
-            guard bodies.count == 1, let only = bodies.first else { return .mixed }
-            return only.map(BodyChoice.body) ?? .none
+            let groups = Set(partIDs.map { document.group(containing: $0)?.id })
+            guard groups.count == 1, let only = groups.first else { return .mixed }
+            return only.map(GroupChoice.group) ?? .none
         } set: { choice in
             switch choice {
-            case .none: document.removeFromBodies(partIDs)
-            case .body(let id): document.addParts(partIDs, toBody: id)
-            case .new: model.createBody(in: &document)
+            case .none: document.removeFromGroups(partIDs)
+            case .group(let id): document.addParts(partIDs, toGroup: id)
+            case .new: model.createGroup(in: &document)
             case .mixed: break
             }
         }

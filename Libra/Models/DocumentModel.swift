@@ -8,7 +8,7 @@ enum SidebarItem: Hashable {
     case part(UUID)
     /// An assembly node, identified by its path of names from the root.
     case assembly([String])
-    case body(UUID)
+    case group(UUID)
 }
 
 enum Tool: Hashable {
@@ -25,7 +25,7 @@ enum Tool: Hashable {
 }
 
 enum ColorMode: String, CaseIterable, Identifiable {
-    case cad, massStatus, body
+    case cad, massStatus, group
 
     var id: Self { self }
 
@@ -33,7 +33,7 @@ enum ColorMode: String, CaseIterable, Identifiable {
         switch self {
         case .cad: "CAD Colors"
         case .massStatus: "Mass Status"
-        case .body: "Bodies"
+        case .group: "Groups"
         }
     }
 }
@@ -74,7 +74,7 @@ final class DocumentModel {
         partIDs(of: selection, in: document)
     }
 
-    /// The parts that sidebar items stand for: the part itself, everything in an assembly, or a body's members.
+    /// The parts that sidebar items stand for: the part itself, everything in an assembly, or a group's members.
     func partIDs(of items: Set<SidebarItem>, in document: LibraDocument) -> Set<UUID> {
         var ids: Set<UUID> = []
         for item in items {
@@ -85,17 +85,17 @@ final class DocumentModel {
                 for part in document.parts where part.path.starts(with: path) {
                     ids.insert(part.id)
                 }
-            case .body(let id):
-                ids.formUnion(document.body(id)?.partIDs ?? [])
+            case .group(let id):
+                ids.formUnion(document.group(id)?.partIDs ?? [])
             }
         }
         return ids
     }
 
-    /// The body, when exactly one body is selected.
-    func selectedBody(in document: LibraDocument) -> Body? {
-        guard selection.count == 1, case .body(let id) = selection.first else { return nil }
-        return document.body(id)
+    /// The group, when exactly one group is selected.
+    func selectedGroup(in document: LibraDocument) -> PartGroup? {
+        guard selection.count == 1, case .group(let id) = selection.first else { return nil }
+        return document.group(id)
     }
 
     static func outline(for parts: [Part]) -> [OutlineNode] {
@@ -210,26 +210,26 @@ final class DocumentModel {
         return true
     }
 
-    /// The frame the inspector is editing: the picking tool's target, else the selected body's, else the Libra frame.
+    /// The frame the inspector is editing: the picking tool's target, else the selected group's, else the Libra frame.
     func activeFrameTarget(in document: LibraDocument) -> FrameTarget? {
         if let target = tool.target { return target }
-        if let body = selectedBody(in: document) { return .body(body.id) }
+        if let group = selectedGroup(in: document) { return .group(group.id) }
         if selection.isEmpty { return .libra }
         return nil
     }
 
-    // MARK: Bodies
+    // MARK: Groups
 
-    /// Makes a body from the parts `items` stand for (the selection by default) and selects it.
-    func createBody(from items: Set<SidebarItem>? = nil, in document: inout LibraDocument) {
-        if let id = document.createBody(partIDs: partIDs(of: items ?? selection, in: document)) {
-            selection = [.body(id)]
+    /// Makes a group from the parts `items` stand for (the selection by default) and selects it.
+    func createGroup(from items: Set<SidebarItem>? = nil, in document: inout LibraDocument) {
+        if let id = document.createGroup(partIDs: partIDs(of: items ?? selection, in: document)) {
+            selection = [.group(id)]
         }
     }
 
-    func deleteBody(_ id: UUID, in document: inout LibraDocument) {
-        document.deleteBody(id)
-        selection.remove(.body(id))
+    func deleteGroup(_ id: UUID, in document: inout LibraDocument) {
+        document.deleteGroup(id)
+        selection.remove(.group(id))
     }
 
     // MARK: Import
@@ -252,8 +252,8 @@ final class DocumentModel {
 
     func scene(for document: LibraDocument, highlightColor: SIMD4<Float>) -> ViewerScene {
         let selectedIDs = selectedPartIDs(in: document)
-        let bodyIndexByPart = Dictionary(
-            document.bodies.enumerated().flatMap { index, body in body.partIDs.map { ($0, index) } },
+        let groupIndexByPart = Dictionary(
+            document.groups.enumerated().flatMap { index, group in group.partIDs.map { ($0, index) } },
             uniquingKeysWith: { first, _ in first }
         )
         let parts = document.parts.map { part in
@@ -262,8 +262,8 @@ final class DocumentModel {
                 part.color.map { SIMD4($0.red, $0.green, $0.blue, 1) } ?? ViewerStyle.defaultPartColor
             case .massStatus:
                 part.massProperties == nil ? ViewerStyle.unassignedColor : ViewerStyle.assignedColor
-            case .body:
-                bodyIndexByPart[part.id].map { ViewerStyle.bodyColors[$0 % ViewerStyle.bodyColors.count] } ?? ViewerStyle.unbodiedColor
+            case .group:
+                groupIndexByPart[part.id].map { ViewerStyle.groupColors[$0 % ViewerStyle.groupColors.count] } ?? ViewerStyle.ungroupedColor
             }
             if selectedIDs.contains(part.id) {
                 color = simd_mix(color, highlightColor, SIMD4(repeating: ViewerStyle.selectionTint))

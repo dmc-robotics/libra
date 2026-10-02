@@ -4,7 +4,7 @@ import Testing
 import simd
 
 @Suite struct ExportTests {
-    /// A 1 kg 0.1 m cube centered at (1, 0, 0) and an unassigned part, in one body whose frame sits at (1, 0, 0)
+    /// A 1 kg 0.1 m cube centered at (1, 0, 0) and an unassigned part, in one group whose frame sits at (1, 0, 0)
     /// turned a quarter about Z.
     static var document: LibraDocument {
         let cube = Fixtures.boxPart(name: "Cube", size: [0.1, 0.1, 0.1], corner: [0.95, -0.05, -0.05], mass: .measured(1))
@@ -12,18 +12,18 @@ import simd
         let frame = Frame.file.moved(to: [1, 0, 0]).rotatedQuarterTurn(about: .z)
         return LibraDocument(
             parts: [cube, loose],
-            bodies: [Body(name: "Arm Link", partIDs: [cube.id, loose.id], frame: frame)]
+            groups: [PartGroup(name: "Arm Link", partIDs: [cube.id, loose.id], frame: frame)]
         )
     }
 
     static var report: MassReport { MassReport(document: document, modelName: "Test Robot") }
 
-    @Test func reportExpressesBodyInItsFrame() throws {
-        let body = try #require(Self.report.bodies.first)
-        expectClose(body.position, [1, 0, 0])
-        expectClose(body.summary.properties.centerOfMass, [0, 0, 0], tolerance: 1e-12)
-        expectClose(body.summary.properties.mass, 1)
-        #expect(body.summary.unassignedCount == 1)
+    @Test func reportExpressesGroupInItsFrame() throws {
+        let group = try #require(Self.report.groups.first)
+        expectClose(group.position, [1, 0, 0])
+        expectClose(group.summary.properties.centerOfMass, [0, 0, 0], tolerance: 1e-12)
+        expectClose(group.summary.properties.mass, 1)
+        #expect(group.summary.unassignedCount == 1)
     }
 
     @Test func mjcf() {
@@ -53,11 +53,11 @@ import simd
         #expect(text.contains("<origin xyz=\"0 0 0\" rpy=\"0 0 0\"/>"))
     }
 
-    @Test func csvHasRowPerAssemblyBodyAndPart() {
+    @Test func csvHasRowPerAssemblyGroupAndPart() {
         let lines = ExportKind.csv.text(for: Self.report).split(separator: "\n")
         #expect(lines.count == 1 + 1 + 1 + 2)
         #expect(lines[0] == Substring(CSVExporter.header))
-        #expect(lines[2].hasPrefix("body,Arm Link,body,1,"))
+        #expect(lines[2].hasPrefix("group,Arm Link,group,1,"))
         // The unassigned part has empty values and counts as unassigned
         #expect(lines[4] == "part,Loose,libra,,,,,,,,,,,1")
     }
@@ -65,18 +65,18 @@ import simd
     @Test func jsonParses() throws {
         let data = Data(ExportKind.json.text(for: Self.report).utf8)
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-        let bodies = try #require(object["bodies"] as? [[String: Any]])
-        #expect(bodies.first?["name"] as? String == "Arm Link")
+        let groups = try #require(object["groups"] as? [[String: Any]])
+        #expect(groups.first?["name"] as? String == "Arm Link")
         #expect((object["parts"] as? [Any])?.count == 2)
     }
 
-    @Test func noBodiesExportsWholeAssembly() {
+    @Test func noGroupsExportsWholeAssembly() {
         var document = Self.document
-        document.bodies = []
+        document.groups = []
         let report = MassReport(document: document, modelName: "Robot")
-        #expect(report.bodies.count == 1)
-        #expect(report.bodies[0].name == "Robot")
-        #expect(report.bodies[0].partNames.count == 2)
+        #expect(report.groups.count == 1)
+        #expect(report.groups[0].name == "Robot")
+        #expect(report.groups[0].partNames.count == 2)
     }
 
     @Test func rollPitchYawRoundTrips() {
@@ -88,7 +88,7 @@ import simd
     }
 
     @Test func identifiersAreSafeAndUnique() {
-        #expect(ExportFormat.identifiers(for: ["Hub v3:1", "Hub v3:1", ""]) == ["Hub_v3_1", "Hub_v3_1_2", "body"])
+        #expect(ExportFormat.identifiers(for: ["Hub v3:1", "Hub v3:1", ""]) == ["Hub_v3_1", "Hub_v3_1_2", "group"])
     }
 }
 

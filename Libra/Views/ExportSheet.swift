@@ -33,7 +33,7 @@ struct ExportSheet: View {
             }
             .background(.background.secondary, in: .rect(cornerRadius: 6))
             HStack {
-                Text("SI units. Bodies are in their own frames, posed relative to the Libra frame.")
+                Text("SI units. Groups are in their own frames, posed relative to the Libra frame.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()

@@ -11,47 +11,47 @@ import simd
         })
     }
 
-    @Test func createBodyKeepsDocumentOrderAndNames() throws {
+    @Test func createGroupKeepsDocumentOrderAndNames() throws {
         var document = Self.makeDocument()
         let ids = document.parts.map(\.id)
-        let createdFirst = document.createBody(partIDs: [ids[2], ids[0]])
+        let createdFirst = document.createGroup(partIDs: [ids[2], ids[0]])
         let first = try #require(createdFirst)
-        #expect(document.body(first)?.partIDs == [ids[0], ids[2]])
-        #expect(document.body(first)?.name == "Body 1")
-        #expect(document.body(first)?.frame == document.libraFrame)
-        #expect(document.createBody(partIDs: [UUID()]) == nil)
-        #expect(document.bodies.count == 1)
+        #expect(document.group(first)?.partIDs == [ids[0], ids[2]])
+        #expect(document.group(first)?.name == "Group 1")
+        #expect(document.group(first)?.frame == document.libraFrame)
+        #expect(document.createGroup(partIDs: [UUID()]) == nil)
+        #expect(document.groups.count == 1)
     }
 
-    @Test func aPartBelongsToAtMostOneBody() throws {
+    @Test func aPartBelongsToAtMostOneGroup() throws {
         var document = Self.makeDocument()
         let ids = document.parts.map(\.id)
-        let createdFirst = document.createBody(partIDs: ids)
+        let createdFirst = document.createGroup(partIDs: ids)
         let first = try #require(createdFirst)
-        let createdSecond = document.createBody(partIDs: [ids[1]])
+        let createdSecond = document.createGroup(partIDs: [ids[1]])
         let second = try #require(createdSecond)
-        #expect(document.body(first)?.partIDs == [ids[0], ids[2]])
-        #expect(document.body(second)?.partIDs == [ids[1]])
+        #expect(document.group(first)?.partIDs == [ids[0], ids[2]])
+        #expect(document.group(second)?.partIDs == [ids[1]])
 
-        document.addParts([ids[0]], toBody: second)
-        #expect(document.body(first)?.partIDs == [ids[2]])
-        #expect(document.body(second)?.partIDs == [ids[0], ids[1]])
-        #expect(document.body(containing: ids[0])?.id == second)
+        document.addParts([ids[0]], toGroup: second)
+        #expect(document.group(first)?.partIDs == [ids[2]])
+        #expect(document.group(second)?.partIDs == [ids[0], ids[1]])
+        #expect(document.group(containing: ids[0])?.id == second)
 
-        document.removeFromBodies([ids[0]])
-        #expect(document.body(containing: ids[0]) == nil)
+        document.removeFromGroups([ids[0]])
+        #expect(document.group(containing: ids[0]) == nil)
     }
 
-    @Test func bodyNamesSkipNamesInUse() throws {
+    @Test func groupNamesSkipNamesInUse() throws {
         var document = Self.makeDocument()
         let ids = document.parts.map(\.id)
-        let createdFirst = document.createBody(partIDs: [ids[0]])
+        let createdFirst = document.createGroup(partIDs: [ids[0]])
         let first = try #require(createdFirst)
-        document.createBody(partIDs: [ids[1]])
-        document.deleteBody(first)
-        let createdThird = document.createBody(partIDs: [ids[2]])
+        document.createGroup(partIDs: [ids[1]])
+        document.deleteGroup(first)
+        let createdThird = document.createGroup(partIDs: [ids[2]])
         let third = try #require(createdThird)
-        #expect(document.body(third)?.name == "Body 3")
+        #expect(document.group(third)?.name == "Group 3")
     }
 
     @Test func framesByTarget() throws {
@@ -62,10 +62,10 @@ import simd
         document.setFrame(moved, for: .libra)
         #expect(document.frame(for: .libra) == moved)
 
-        let createdBody = document.createBody(partIDs: ids)
-        let body = try #require(createdBody)
-        document.setFrame(Frame.file.rotatedQuarterTurn(about: .z), for: .body(body))
-        #expect(document.frame(for: .body(body))?.xAxis == [0, 1, 0])
+        let createdGroup = document.createGroup(partIDs: ids)
+        let group = try #require(createdGroup)
+        document.setFrame(Frame.file.rotatedQuarterTurn(about: .z), for: .group(group))
+        #expect(document.frame(for: .group(group))?.xAxis == [0, 1, 0])
 
         // A part has an override frame only while it has an override
         #expect(document.frame(for: .override(ids[0])) == nil)

@@ -13,29 +13,29 @@ struct SidebarView: View {
                         .tag(node.id)
                 }
             }
-            Section("Bodies") {
-                ForEach(document.bodies) { body in
-                    Label(body.name, systemImage: "cube.fill")
-                        .badge(body.partIDs.count)
-                        .tag(SidebarItem.body(body.id))
+            Section("Groups") {
+                ForEach(document.groups) { group in
+                    Label(group.name, systemImage: "cube.fill")
+                        .badge(group.partIDs.count)
+                        .tag(SidebarItem.group(group.id))
                 }
-                if document.bodies.isEmpty {
+                if document.groups.isEmpty {
                     Text("Select parts, then ⌘G")
                         .foregroundStyle(.secondary)
-                        .help("Edit › New Body from Selection")
+                        .help("Edit › New Group from Selection")
                         .selectionDisabled()
                 }
             }
         }
         .contextMenu(forSelectionType: SidebarItem.self) { items in
-            if items.contains(where: { if case .body = $0 { false } else { true } }) {
-                Button("New Body from Selection") {
-                    model.createBody(from: items, in: &document)
+            if items.contains(where: { if case .group = $0 { false } else { true } }) {
+                Button("New Group from Selection") {
+                    model.createGroup(from: items, in: &document)
                 }
             }
-            if items.count == 1, case .body(let id) = items.first {
-                Button("Delete Body", role: .destructive) {
-                    model.deleteBody(id, in: &document)
+            if items.count == 1, case .group(let id) = items.first {
+                Button("Delete Group", role: .destructive) {
+                    model.deleteGroup(id, in: &document)
                 }
             }
         }

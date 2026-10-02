@@ -3,13 +3,13 @@ import simd
 
 /// Everything the exporters write, computed once from a document. SI units throughout.
 public struct MassReport: Sendable {
-    public struct BodyEntry: Sendable {
+    public struct GroupEntry: Sendable {
         public var name: String
-        /// Body frame origin in the Libra frame.
+        /// Group frame origin in the Libra frame.
         public var position: SIMD3<Double>
-        /// Body frame axes in the Libra frame (columns).
+        /// Group frame axes in the Libra frame (columns).
         public var rotation: simd_double3x3
-        /// In the body frame; inertia about the center of mass along the body axes.
+        /// In the group frame; inertia about the center of mass along the group axes.
         public var summary: MassSummary
         public var partNames: [String]
     }
@@ -25,26 +25,26 @@ public struct MassReport: Sendable {
     public var modelName: String
     /// In the Libra frame.
     public var assembly: MassSummary
-    public var bodies: [BodyEntry]
+    public var groups: [GroupEntry]
     public var parts: [PartEntry]
 
-    /// With no bodies defined, the whole assembly is reported as one body in the Libra frame.
+    /// With no groups defined, the whole assembly is reported as one group in the Libra frame.
     public init(document: LibraDocument, modelName: String) {
         self.modelName = modelName
         let libraFrame = document.libraFrame
         assembly = MassSummary(parts: document.parts).expressed(in: libraFrame)
 
-        let bodies = document.bodies.isEmpty
-            ? [Body(name: modelName, partIDs: document.parts.map(\.id), frame: libraFrame)]
-            : document.bodies
-        self.bodies = bodies.map { body in
-            let parts = document.parts(body.partIDs)
-            let pose = body.frame.pose(relativeTo: libraFrame)
-            return BodyEntry(
-                name: body.name,
+        let groups = document.groups.isEmpty
+            ? [PartGroup(name: modelName, partIDs: document.parts.map(\.id), frame: libraFrame)]
+            : document.groups
+        self.groups = groups.map { group in
+            let parts = document.parts(group.partIDs)
+            let pose = group.frame.pose(relativeTo: libraFrame)
+            return GroupEntry(
+                name: group.name,
                 position: pose.position,
                 rotation: pose.rotation,
-                summary: MassSummary(parts: parts).expressed(in: body.frame),
+                summary: MassSummary(parts: parts).expressed(in: group.frame),
                 partNames: parts.map(\.name)
             )
         }
@@ -93,7 +93,7 @@ enum ExportFormat {
         var used: Set<String> = []
         return names.map { name in
             var base = String(name.map { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "_" || $0 == "-") ? $0 : "_" })
-            if base.isEmpty { base = "body" }
+            if base.isEmpty { base = "group" }
             var candidate = base
             var suffix = 2
             while used.contains(candidate) {

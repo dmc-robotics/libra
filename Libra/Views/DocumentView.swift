@@ -45,7 +45,7 @@ struct DocumentView: View {
     /// Menu bar commands for this window.
     private var actions: DocumentActions {
         let isEmpty = document.content.isEmpty
-        let selectedBody = model.selectedBody(in: document.content)
+        let selectedGroup = model.selectedGroup(in: document.content)
         let hasSelectedParts = !model.selectedPartIDs(in: document.content).isEmpty
         return DocumentActions(
             importStep: isEmpty && !model.isImporting ? { isImporterPresented = true } : nil,
@@ -53,8 +53,8 @@ struct DocumentView: View {
             fit: { model.viewer.fit() },
             look: { model.viewer.look(from: $0, in: document.content.libraFrame) },
             colorMode: $model.colorMode,
-            newBody: hasSelectedParts && selectedBody == nil ? { model.createBody(in: &document.content) } : nil,
-            deleteBody: selectedBody.map { body in { model.deleteBody(body.id, in: &document.content) } }
+            newGroup: hasSelectedParts && selectedGroup == nil ? { model.createGroup(in: &document.content) } : nil,
+            deleteGroup: selectedGroup.map { group in { model.deleteGroup(group.id, in: &document.content) } }
         )
     }
 
@@ -143,7 +143,7 @@ struct DocumentView: View {
             } label: {
                 Label("Color By", systemImage: "paintpalette")
             }
-            .help("Color parts by their CAD color, mass status or body")
+            .help("Color parts by their CAD color, mass status or group")
         }
         ToolbarItem {
             Button {

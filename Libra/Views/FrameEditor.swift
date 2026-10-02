@@ -55,8 +55,8 @@ struct FrameEditor: View {
                     if target != .libra {
                         Button("Match Libra Frame") { update(document.libraFrame) }
                     }
-                    if case .body(let id) = target, let body = document.body(id) {
-                        let summary = MassSummary(parts: document.parts(body.partIDs))
+                    if case .group(let id) = target, let group = document.group(id) {
+                        let summary = MassSummary(parts: document.parts(group.partIDs))
                         Button("Origin at Center of Mass") { update(frame.moved(to: summary.properties.centerOfMass)) }
                             .disabled(summary.properties.mass <= 0)
                     }

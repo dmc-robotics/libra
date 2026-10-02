@@ -44,11 +44,11 @@ enum ViewerStyle {
     static let defaultPartColor: SIMD4<Float> = [0.72, 0.74, 0.78, 1]
     static let assignedColor: SIMD4<Float> = [0.55, 0.75, 0.55, 1]
     static let unassignedColor: SIMD4<Float> = [0.95, 0.62, 0.30, 1]
-    static let unbodiedColor: SIMD4<Float> = [0.80, 0.80, 0.80, 1]
+    static let ungroupedColor: SIMD4<Float> = [0.80, 0.80, 0.80, 1]
     /// How strongly the accent color tints selected parts (0…1).
     static let selectionTint: Float = 0.55
-    /// Colors for bodies in "Color by Body" mode, reused in order.
-    static let bodyColors: [SIMD4<Float>] = [
+    /// Colors for groups in "Color by Group" mode, reused in order.
+    static let groupColors: [SIMD4<Float>] = [
         [0.36, 0.60, 0.92, 1], [0.92, 0.55, 0.30, 1], [0.45, 0.78, 0.45, 1], [0.86, 0.42, 0.62, 1],
         [0.62, 0.50, 0.88, 1], [0.90, 0.78, 0.32, 1], [0.35, 0.78, 0.78, 1], [0.70, 0.55, 0.40, 1]
     ]

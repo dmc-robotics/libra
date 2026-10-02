@@ -67,13 +67,13 @@ import simd
         #expect(model.selection.isEmpty)
     }
 
-    @Test func createBodyFromSidebarItemsSelectsIt() throws {
+    @Test func createGroupFromSidebarItemsSelectsIt() throws {
         var document = Self.makeDocument()
         let model = DocumentModel()
-        model.createBody(from: [.assembly(["Robot", "Arm"])], in: &document)
-        let body = try #require(document.bodies.first)
-        #expect(body.partIDs == [document.parts[1].id])
-        #expect(model.selection == [.body(body.id)])
+        model.createGroup(from: [.assembly(["Robot", "Arm"])], in: &document)
+        let group = try #require(document.groups.first)
+        #expect(group.partIDs == [document.parts[1].id])
+        #expect(model.selection == [.group(group.id)])
     }
 
     @Test func keysTurnTheActiveFrame() {

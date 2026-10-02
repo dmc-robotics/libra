@@ -3,13 +3,14 @@ import simd
 /// A point or direction taken from a CAD feature under the cursor.
 public struct Snap: Hashable, Sendable {
     public enum Kind: Hashable, Sendable {
-        case vertex, circleCenter, axisPoint, sphereCenter, faceCenter, surfacePoint
+        case vertex, circleCenter, axisCenter, axisPoint, sphereCenter, faceCenter, surfacePoint
         case lineDirection, circleNormal, axisDirection, faceNormal
 
         public var name: String {
             switch self {
             case .vertex: "Vertex"
             case .circleCenter: "Circle center"
+            case .axisCenter: "Cylinder center"
             case .axisPoint: "Point on axis"
             case .sphereCenter: "Sphere center"
             case .faceCenter: "Face center"
@@ -62,7 +63,11 @@ public struct Snapper {
         }
         switch feature.kind {
         case .cylinder, .cone, .torus:
+            // The face's center on its axis (halfway along it) when the cursor is level with it, else anywhere on the axis
             let onAxis = feature.center + feature.direction * simd_dot(hit.point - feature.center, feature.direction)
+            if simd_distance(camera.project(onAxis), camera.project(feature.center)) <= tolerance {
+                return Snap(kind: .axisCenter, point: feature.center, face: faceReference)
+            }
             return Snap(kind: .axisPoint, point: onAxis, face: faceReference)
         case .sphere:
             return Snap(kind: .sphereCenter, point: feature.center, face: faceReference)

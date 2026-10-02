@@ -131,3 +131,44 @@ func expectClose(_ actual: InertiaTensor, _ expected: InertiaTensor, relative: D
         #expect(Set(parts.map(\.path)).isSuperset(of: [["Duplicates", "Group"], ["Duplicates", "Group (2)"]]))
     }
 }
+
+/// Snapping on the fixture's cylinder: radius 5 mm, axis along Z from z = 50 to 90 mm.
+@Suite struct CylinderSnapTests {
+    let cylinder: Part
+    let camera: OrthographicCamera
+
+    init() async throws {
+        let url = try #require(Bundle.module.url(forResource: "assembly", withExtension: "step", subdirectory: "Fixtures"))
+        let parts = try await StepImporter.shared.importParts(from: url)
+        cylinder = try #require(parts.first { $0.name == "Cylinder:1" })
+        var camera = OrthographicCamera(viewportSize: [800, 600], sceneBounds: cylinder.geometry.bounds)
+        camera.look(from: .front, in: .file)
+        camera.fit(cylinder.geometry.bounds)
+        self.camera = camera
+    }
+
+    /// The origin snap with the cursor over the cylinder's front surface at height `z`.
+    func originSnap(atHeight z: Double) throws -> Snap {
+        let cursor = camera.project([0, -0.005, z])
+        let hit = try #require(PartPicker(parts: [cylinder]).pick(camera.ray(through: cursor)))
+        return try #require(Snapper(camera: camera, cursor: cursor).originSnap(for: hit, in: cylinder.geometry))
+    }
+
+    @Test func middleSnapsToCenter() throws {
+        let snap = try originSnap(atHeight: 0.0702)
+        #expect(snap.kind == .axisCenter)
+        expectClose(snap.point, [0, 0, 0.07])
+    }
+
+    @Test func elsewhereSnapsToAxis() throws {
+        let snap = try originSnap(atHeight: 0.08)
+        #expect(snap.kind == .axisPoint)
+        expectClose(snap.point, [0, 0, 0.08], tolerance: 1e-6)
+    }
+
+    @Test func nearTheEndSnapsToCircleCenter() throws {
+        let snap = try originSnap(atHeight: 0.0899)
+        #expect(snap.kind == .circleCenter)
+        expectClose(snap.point, [0, 0, 0.09])
+    }
+}

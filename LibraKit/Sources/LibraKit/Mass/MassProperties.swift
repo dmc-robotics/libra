@@ -49,6 +49,22 @@ public struct MassProperties: Hashable, Sendable {
     public var inertiaAboutOrigin: InertiaTensor {
         inertia + .pointMass(mass, at: centerOfMass)
     }
+
+    public func inertia(about reference: InertiaReference) -> InertiaTensor {
+        switch reference {
+        case .centerOfMass: inertia
+        case .origin: inertiaAboutOrigin
+        }
+    }
+}
+
+/// The point an inertia tensor is taken about. Along the same axes either way.
+public enum InertiaReference: String, CaseIterable, Identifiable, Sendable {
+    case centerOfMass
+    /// The origin of the frame the properties are expressed in.
+    case origin
+
+    public var id: Self { self }
 }
 
 /// Totals for a set of parts, with a count of the ones that couldn't contribute.

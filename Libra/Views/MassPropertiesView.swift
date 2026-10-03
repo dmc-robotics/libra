@@ -5,6 +5,7 @@ import SwiftUI
 struct MassPropertiesView: View {
     let properties: MassProperties
     @DisplayUnitsSetting private var units
+    @AppStorage(Preferences.inertiaReferenceKey) private var inertiaReference = InertiaReference.centerOfMass
 
     var body: some View {
         let centerOfMass = properties.centerOfMass / units.length.siPerUnit
@@ -12,6 +13,13 @@ struct MassPropertiesView: View {
             Text("\(Formatting.number(centerOfMass.x)), \(Formatting.number(centerOfMass.y)), \(Formatting.number(centerOfMass.z)) \(units.length.symbol)")
         }
         .help("x, y, z")
+        Picker("Inertia About", selection: $inertiaReference) {
+            ForEach(InertiaReference.allCases) { reference in
+                Text(reference.name).tag(reference)
+            }
+        }
+        .pickerStyle(.segmented)
+        .help("Show inertia about the center of mass or about the origin of the frame these values are in")
         VStack(alignment: .leading, spacing: 6) {
             Text("Inertia (\(units.inertia.symbol))")
             Grid(alignment: .trailing, horizontalSpacing: 12, verticalSpacing: 3) {
@@ -34,7 +42,7 @@ struct MassPropertiesView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
-            .help("About the center of mass. Off-diagonal values are tensor entries (Ixy = −∫xy dm).")
+            .help("About \(inertiaReference.phrase). Off-diagonal values are tensor entries (Ixy = −∫xy dm).")
         }
         .monospacedDigit()
         .lineLimit(1)
@@ -45,7 +53,7 @@ struct MassPropertiesView: View {
 
     /// Entries that are only integration noise next to the largest moment show as 0.
     private func inertiaEntry(_ row: FrameAxis, _ column: FrameAxis) -> Double {
-        let inertia = properties.inertia
+        let inertia = properties.inertia(about: inertiaReference)
         let value = inertia.matrix[column.rawValue][row.rawValue]
         let scale = max(abs(inertia.xx), abs(inertia.yy), abs(inertia.zz))
         return abs(value) < scale * Formatting.relativeNoise ? 0 : value
@@ -72,6 +80,7 @@ struct MassPropertiesSection<MassRows: View>: View {
     /// Shown first, e.g. a field to edit a part's mass. A read-only total by default.
     let massRows: MassRows
     @DisplayUnitsSetting private var units
+    @AppStorage(Preferences.inertiaReferenceKey) private var inertiaReference = InertiaReference.centerOfMass
 
     init(summary: MassSummary, frameName: String, @ViewBuilder massRows: () -> MassRows) {
         self.summary = summary
@@ -92,7 +101,7 @@ struct MassPropertiesSection<MassRows: View>: View {
                 Text("Mass Properties")
                 Spacer()
                 Button {
-                    copyToPasteboard(Formatting.summary(summary.properties, title: "Mass properties (\(frameName))", units: units))
+                    copyToPasteboard(Formatting.summary(summary.properties, title: "Mass properties (\(frameName))", units: units, inertiaReference: inertiaReference))
                 } label: {
                     Label("Copy", systemImage: "doc.on.doc")
                         .labelStyle(.iconOnly)
@@ -101,7 +110,7 @@ struct MassPropertiesSection<MassRows: View>: View {
                 .help("Copy these values")
             }
         } footer: {
-            Text("In the \(frameName). Inertia is about the center of mass.")
+            Text("In the \(frameName). Inertia is about \(inertiaReference.phrase).")
         }
     }
 }
@@ -109,5 +118,22 @@ struct MassPropertiesSection<MassRows: View>: View {
 extension MassPropertiesSection where MassRows == MassRow {
     init(summary: MassSummary, frameName: String) {
         self.init(summary: summary, frameName: frameName) { MassRow(mass: summary.properties.mass) }
+    }
+}
+
+extension InertiaReference {
+    var name: String {
+        switch self {
+        case .centerOfMass: "Center of Mass"
+        case .origin: "Origin"
+        }
+    }
+
+    /// For sentences, e.g. "Inertia is about the center of mass".
+    var phrase: String {
+        switch self {
+        case .centerOfMass: "the center of mass"
+        case .origin: "the frame's origin"
+        }
     }
 }

@@ -29,14 +29,16 @@ extension Formatting {
     }
 
     /// A plain-text block for the clipboard.
-    static func summary(_ properties: MassProperties, title: String, units: DisplayUnits) -> String {
-        let inertia = properties.inertia
+    static func summary(
+        _ properties: MassProperties, title: String, units: DisplayUnits, inertiaReference: InertiaReference = .centerOfMass
+    ) -> String {
+        let inertia = properties.inertia(about: inertiaReference)
         let value = { units.inertia.fromSI($0) }
         return """
         \(title)
         Mass: \(number(units.mass.fromSI(properties.mass))) \(units.mass.symbol)
         Center of mass: \(vector(properties.centerOfMass / units.length.siPerUnit)) \(units.length.symbol)
-        Inertia about COM (\(units.inertia.symbol)):
+        Inertia about \(inertiaReference == .centerOfMass ? "COM" : "origin") (\(units.inertia.symbol)):
           Ixx \(number(value(inertia.xx)))  Ixy \(number(value(inertia.xy)))  Ixz \(number(value(inertia.xz)))
           Iyx \(number(value(inertia.xy)))  Iyy \(number(value(inertia.yy)))  Iyz \(number(value(inertia.yz)))
           Izx \(number(value(inertia.xz)))  Izy \(number(value(inertia.yz)))  Izz \(number(value(inertia.zz)))

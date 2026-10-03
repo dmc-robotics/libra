@@ -5,6 +5,8 @@ enum Preferences {
     static let lengthUnitKey = "lengthUnit"
     static let massUnitKey = "massUnit"
     static let inertiaUnitKey = "inertiaUnit"
+    /// Whether the inspector shows inertia about the center of mass or the frame's origin.
+    static let inertiaReferenceKey = "inertiaReference"
     /// AppKit's wait before showing a tooltip, which is otherwise about a second.
     static let toolTipDelayKey = "NSInitialToolTipDelay"
     static let toolTipDelayMilliseconds = 500

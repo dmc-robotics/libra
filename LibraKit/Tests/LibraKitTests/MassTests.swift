@@ -57,6 +57,14 @@ import simd
         expectClose(properties.inertiaAboutOrigin, InertiaTensor(xx: 18, yy: 18, zz: 0, xy: 0, xz: 0, yz: 0))
     }
 
+    @Test func inertiaAboutEitherReference() {
+        // Off-axis, so the product of inertia picks up -m x y
+        let inertia = InertiaTensor(xx: 1, yy: 2, zz: 3, xy: 0, xz: 0, yz: 0)
+        let properties = MassProperties(mass: 2, centerOfMass: [1, 2, 0], inertia: inertia)
+        #expect(properties.inertia(about: .centerOfMass) == inertia)
+        expectClose(properties.inertia(about: .origin), InertiaTensor(xx: 1 + 8, yy: 2 + 2, zz: 3 + 10, xy: -4, xz: 0, yz: 0))
+    }
+
     @Test func summaryCountsUnassigned() {
         let parts = [
             Fixtures.boxPart(size: [1, 1, 1], mass: 1),

@@ -35,4 +35,4 @@
 
 ** Math
 
-- [ ] Implement a toggle to calculate interitas about COM vs global origin.
+- [x] Implement a toggle to calculate interitas about COM vs global origin.

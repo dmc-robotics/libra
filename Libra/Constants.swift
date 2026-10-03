@@ -36,6 +36,8 @@ enum Layout {
     static let exportSheetWidth: CGFloat = 640
     static let exportSheetHeight: CGFloat = 520
     static let statusBarHeight: CGFloat = 28
+    /// Inset of buttons floating over the viewer, like the home button.
+    static let viewerOverlayPadding: CGFloat = 10
     /// How far inspector numbers may shrink to fit a narrow column.
     static let minimumTextScale: CGFloat = 0.75
 }

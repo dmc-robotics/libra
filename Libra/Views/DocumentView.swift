@@ -91,6 +91,7 @@ struct DocumentView: View {
                 .navigationSplitViewColumnWidth(min: Layout.sidebarMinWidth, ideal: Layout.sidebarIdealWidth)
         } detail: {
             viewer
+                .overlay(alignment: .topTrailing) { homeButton }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     StatusBar(document: $document.content, model: model)
                 }
@@ -103,6 +104,19 @@ struct DocumentView: View {
         .sheet(isPresented: $model.isShowingExport) {
             ExportSheet(report: MassReport(document: document.content, modelName: modelName), fileName: modelName)
         }
+    }
+
+    /// Back to the isometric view, like a CAD app's home view.
+    private var homeButton: some View {
+        Button {
+            model.viewer.look(from: .isometric, in: document.content.libraFrame)
+        } label: {
+            Label("Home", systemImage: "house")
+                .labelStyle(.iconOnly)
+        }
+        .buttonStyle(.glass)
+        .help("Isometric view (⌘7)")
+        .padding(Layout.viewerOverlayPadding)
     }
 
     private var viewer: some View {

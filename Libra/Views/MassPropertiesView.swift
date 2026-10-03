@@ -18,14 +18,16 @@ struct MassPropertiesView: View {
                 GridRow {
                     Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                     ForEach(FrameAxis.allCases, id: \.self) { axis in
-                        Text(axis.name.lowercased()).foregroundStyle(.secondary)
+                        Text(axis.name.lowercased()).foregroundStyle(.tertiary)
                     }
                 }
                 ForEach(FrameAxis.allCases, id: \.self) { row in
                     GridRow {
-                        Text(row.name.lowercased()).foregroundStyle(.secondary)
+                        Text(row.name.lowercased()).foregroundStyle(.tertiary)
                         ForEach(FrameAxis.allCases, id: \.self) { column in
+                            // Grey like the other read-only values
                             Text(Formatting.number(units.inertia.fromSI(inertiaEntry(row, column))))
+                                .foregroundStyle(.secondary)
                                 .gridColumnAlignment(.trailing)
                         }
                     }

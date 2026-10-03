@@ -22,7 +22,7 @@
 - [x] Delete the group line from the right side bar
 - [x] On the right side bar, delete volume
 - [x] On the right side bar, delete Mass under "Mass Properties" and move the form field there instead.
-- [ ] On the right side bar, render the interitas in grey text like the other non-editable values.
+- [x] On the right side bar, render the interitas in grey text like the other non-editable values.
 
 ### Groups
 

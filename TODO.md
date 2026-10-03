@@ -20,7 +20,7 @@
 - [x] Delete the Assembly line from the right hand side bar
 - [x] Remove the mass source options (None and Override). A part just has a mass, which defaults to 0 g.
 - [x] Delete the group line from the right side bar
-- [ ] On the right side bar, delete volume
+- [x] On the right side bar, delete volume
 - [ ] On the right side bar, delete Mass under "Mass Properties" and move the form field there instead.
 - [ ] On the right side bar, render the interitas in grey text like the other non-editable values.
 

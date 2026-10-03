@@ -109,9 +109,6 @@ private struct PartsInspector: View {
         Section("Part") {
             LabeledContent("Name", value: part.name)
             LabeledContent("Component", value: part.definitionName)
-            LabeledContent("Volume") {
-                Text("\(Formatting.number(part.volumeProperties.volume / pow(units.length.siPerUnit, 3))) \(units.length.symbol)³")
-            }
             if !part.hasVolume {
                 Label("No closed volume (a surface body?), so its mass is left out.", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)

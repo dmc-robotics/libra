@@ -92,6 +92,23 @@ final class DocumentModel {
         return ids
     }
 
+    /// Selects every instance of the components `partIDs` are instances of, e.g. all four wheels from one.
+    func selectOthers(like partIDs: Set<UUID>, in document: LibraDocument) {
+        selection = Set(document.instances(sharingComponentWith: partIDs).map { .part($0.id) })
+    }
+
+    /// The parts a right-click in the viewer acts on: the selected parts if it lands on one of them, otherwise
+    /// the part under the cursor, which becomes the selection. Nil off the model or while picking a frame.
+    func contextMenuPartIDs(for pointer: ViewerPointer, in document: LibraDocument) -> Set<UUID>? {
+        guard tool == .select, let hit = pointer.hit else { return nil }
+        let selected = selectedPartIDs(in: document)
+        if selected.contains(hit.partID) {
+            return selected
+        }
+        selection = [.part(hit.partID)]
+        return [hit.partID]
+    }
+
     /// The group, when exactly one group is selected.
     func selectedGroup(in document: LibraDocument) -> PartGroup? {
         guard selection.count == 1, case .group(let id) = selection.first else { return nil }

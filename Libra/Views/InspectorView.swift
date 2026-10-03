@@ -110,15 +110,7 @@ private struct PartsInspector: View {
     private func singlePart(_ part: Part, index: Int) -> some View {
         Section("Part") {
             LabeledContent("Name", value: part.name)
-            LabeledContent("Component") {
-                HStack {
-                    Text(part.definitionName)
-                    Button("Select All") {
-                        model.selection = Set(document.parts.filter { $0.definitionName == part.definitionName }.map { .part($0.id) })
-                    }
-                    .help("Select every instance of \(part.definitionName)")
-                }
-            }
+            LabeledContent("Component", value: part.definitionName)
             if !part.path.isEmpty {
                 LabeledContent("Assembly", value: part.path.joined(separator: " › "))
             }

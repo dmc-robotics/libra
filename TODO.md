@@ -15,7 +15,7 @@
 
 ### Parts
 
-- [ ] Right clicking a part in the side bar or the viewport should bring up a menu with "Select Others". This should replace the "Select All" button on the right sidebar.
+- [x] Right clicking a part in the side bar or the viewport should bring up a menu with "Select Others". This should replace the "Select All" button on the right sidebar.
 - [ ] Delete the Assembly line from the right hand side bar
 - [x] Remove the mass source options (None and Override). A part just has a mass, which defaults to 0 g.
 - [ ] Delete the group line from the right side bar
@@ -27,3 +27,8 @@
 - [ ] When right clicking part(s), the menu should have "Add to group" along with "New Group".
 - [ ] Right clicking a group in the side bar should bring up a menu with "Select Parts"
 - [ ] Double clicking a group in the side bar should allow the name to be edited in place.
+
+
+** Math
+
+- [ ] Implement a toggle to calculate interitas about COM vs global origin.

@@ -28,6 +28,12 @@ public struct LibraDocument: Codable, Hashable, Sendable {
         return parts.filter { wanted.contains($0.id) }
     }
 
+    /// Every part that is an instance of the same component as one of `ids`, e.g. all four wheels from one.
+    public func instances(sharingComponentWith ids: some Sequence<UUID>) -> [Part] {
+        let components = Set(parts(ids).map(\.definitionName))
+        return parts.filter { components.contains($0.definitionName) }
+    }
+
     public var bounds: BoundingBox {
         parts.reduce(BoundingBox.empty) { $0.union($1.geometry.bounds) }
     }

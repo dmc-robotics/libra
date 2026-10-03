@@ -67,6 +67,33 @@ import simd
         #expect(model.selection.isEmpty)
     }
 
+    @Test func rightClickTargetsTheSelectionOrThePartUnderIt() {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        let base = document.parts[0].id
+        let link = document.parts[1].id
+        model.click(Self.pointer(hitting: base), extendingSelection: false, in: &document)
+        model.click(Self.pointer(hitting: link), extendingSelection: true, in: &document)
+        #expect(model.contextMenuPartIDs(for: Self.pointer(hitting: link), in: document) == [base, link])
+        #expect(model.selection == [.part(base), .part(link)])
+
+        model.selection = [.part(base)]
+        #expect(model.contextMenuPartIDs(for: Self.pointer(hitting: link), in: document) == [link])
+        #expect(model.selection == [.part(link)])
+
+        #expect(model.contextMenuPartIDs(for: Self.pointer(hitting: nil), in: document) == nil)
+        model.tool = .pickOrigin(.libra)
+        #expect(model.contextMenuPartIDs(for: Self.pointer(hitting: link), in: document) == nil)
+    }
+
+    @Test func selectOthersSelectsEveryInstance() {
+        var document = Self.makeDocument()
+        document.parts.append(Self.cube(name: "Base", path: ["Robot"], corner: [0.4, 0, 0]))
+        let model = DocumentModel()
+        model.selectOthers(like: [document.parts[0].id], in: document)
+        #expect(model.selection == [.part(document.parts[0].id), .part(document.parts[2].id)])
+    }
+
     @Test func createGroupFromSidebarItemsSelectsIt() throws {
         var document = Self.makeDocument()
         let model = DocumentModel()

@@ -112,8 +112,16 @@ struct DocumentView: View {
             pick: { model.pick($0, in: document.content) },
             onHover: { model.hover($0, in: document.content) },
             onClick: { pointer, extending in model.click(pointer, extendingSelection: extending, in: &document.content) },
-            onKey: { characters, shift in model.handleKey(characters, shift: shift, in: &document.content) }
+            onKey: { characters, shift in model.handleKey(characters, shift: shift, in: &document.content) },
+            contextMenu: viewerMenu
         )
+    }
+
+    private func viewerMenu(for pointer: ViewerPointer) -> [ViewerMenuItem] {
+        guard let partIDs = model.contextMenuPartIDs(for: pointer, in: document.content) else { return [] }
+        return [
+            ViewerMenuItem(title: "Select Others") { model.selectOthers(like: partIDs, in: document.content) }
+        ]
     }
 
     @ToolbarContentBuilder

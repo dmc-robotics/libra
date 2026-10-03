@@ -84,6 +84,16 @@ import simd
         #expect(document.showsFrame(.libra))
     }
 
+    @Test func instancesShareAComponent() {
+        var document = Self.makeDocument()
+        document.parts[0].definitionName = "Wheel"
+        document.parts[2].definitionName = "Wheel"
+        let ids = document.parts.map(\.id)
+        #expect(document.instances(sharingComponentWith: [ids[0]]).map(\.id) == [ids[0], ids[2]])
+        #expect(document.instances(sharingComponentWith: [ids[1]]).map(\.id) == [ids[1]])
+        #expect(document.instances(sharingComponentWith: [UUID()]).isEmpty)
+    }
+
     @Test func setMassForSeveralParts() {
         var document = Self.makeDocument()
         let ids = Set(document.parts.prefix(2).map(\.id))

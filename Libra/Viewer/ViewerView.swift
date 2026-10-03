@@ -11,6 +11,7 @@ struct ViewerView: NSViewRepresentable {
     let onHover: (ViewerPointer?) -> Void
     let onClick: (ViewerPointer, Bool) -> Void
     let onKey: (String, Bool) -> Bool
+    let contextMenu: (ViewerPointer) -> [ViewerMenuItem]
 
     func makeNSView(context: Context) -> ViewerMTKView {
         let view = ViewerMTKView()
@@ -23,8 +24,15 @@ struct ViewerView: NSViewRepresentable {
         view.onHover = onHover
         view.onClick = onClick
         view.onKey = onKey
+        view.contextMenu = contextMenu
         view.upAxis = upAxis
         view.wantsHover = wantsHover
         view.scene = scene
     }
+}
+
+/// One command in the viewer's right-click menu.
+struct ViewerMenuItem {
+    var title: String
+    var action: () -> Void
 }

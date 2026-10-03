@@ -8,6 +8,7 @@ import MetalKit
 /// - Right-drag, ⌥-drag or two-finger scroll: pan
 /// - Pinch or mouse wheel: zoom at the cursor
 /// - Double-click: fit
+/// - Right-click (without dragging) or ⌃-click: context menu
 final class ViewerMTKView: MTKView {
     private(set) var camera = OrthographicCamera()
     var scene = ViewerScene() {
@@ -21,6 +22,8 @@ final class ViewerMTKView: MTKView {
     var onHover: ((ViewerPointer?) -> Void)?
     var onClick: ((ViewerPointer, _ extendingSelection: Bool) -> Void)?
     var onKey: ((_ characters: String, _ shift: Bool) -> Bool)?
+    /// The items for a right-click at the pointer; no menu if empty.
+    var contextMenu: ((ViewerPointer) -> [ViewerMenuItem])?
 
     private var renderer: Renderer?
     private var sceneBounds = BoundingBox.empty
@@ -144,6 +147,10 @@ final class ViewerMTKView: MTKView {
 
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
+        if event.modifierFlags.contains(.control) {
+            showContextMenu(for: event)
+            return
+        }
         beginDrag(at: point(of: event), panning: event.modifierFlags.contains(.option))
     }
 
@@ -169,8 +176,10 @@ final class ViewerMTKView: MTKView {
 
     override func mouseUp(with event: NSEvent) {
         let wasDragging = isDragging
+        // No press began here if the mouse went down as a ⌃-click and opened the context menu
+        let wasPressed = dragStart != nil
         endDrag()
-        guard !wasDragging else { return }
+        guard wasPressed, !wasDragging else { return }
         if event.clickCount == 2 {
             fitToScene()
         } else {
@@ -180,7 +189,21 @@ final class ViewerMTKView: MTKView {
     }
 
     override func rightMouseUp(with event: NSEvent) {
+        let wasDragging = isDragging
         endDrag()
+        if !wasDragging {
+            showContextMenu(for: event)
+        }
+    }
+
+    private func showContextMenu(for event: NSEvent) {
+        let items = contextMenu?(pointer(at: point(of: event))) ?? []
+        guard !items.isEmpty else { return }
+        let menu = NSMenu()
+        for item in items {
+            menu.addItem(ActionMenuItem(title: item.title, action: item.action))
+        }
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
     }
 
     override func otherMouseUp(with event: NSEvent) {
@@ -238,5 +261,25 @@ final class ViewerMTKView: MTKView {
         if onKey?(characters, event.modifierFlags.contains(.shift)) != true {
             super.keyDown(with: event)
         }
+    }
+}
+
+/// A menu item that runs a closure.
+private final class ActionMenuItem: NSMenuItem {
+    private let handler: () -> Void
+
+    init(title: String, action handler: @escaping () -> Void) {
+        self.handler = handler
+        super.init(title: title, action: #selector(run), keyEquivalent: "")
+        target = self
+    }
+
+    @available(*, unavailable)
+    required init(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    @objc private func run() {
+        handler()
     }
 }

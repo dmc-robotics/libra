@@ -141,9 +141,11 @@ import simd
         let plain = colors(.triad(.file, size: .large, selected: false))
         #expect(!plain.contains { $0.x == highlight.x && $0.y == highlight.y && $0.z == highlight.z })
         #expect(plain.allSatisfy { $0.w == 1 })
+        #expect(!plain.contains(MarkerMesh.Style.light))
 
+        // A white origin dot in a glow of the highlight color
         let selected = colors(.triad(.file, size: .large, selected: true))
-        #expect(selected.contains(highlight))
+        #expect(selected.contains(MarkerMesh.Style.light))
         #expect(selected.contains([1, 0, 1, MarkerMesh.Style.selectedGlowOpacity]))
         #expect(selected.contains([1, 0, 1, 0]))
     }

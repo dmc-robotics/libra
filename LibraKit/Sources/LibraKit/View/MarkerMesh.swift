@@ -19,7 +19,7 @@ public struct MarkerMesh {
         /// Arrowheads on small triads, relative to the usual size.
         public static let smallArrowScale = 0.75
         /// A selected frame's origin: a soft halo in the highlight color, fading out from its center.
-        public static let selectedGlowRadius = 16.0
+        public static let selectedGlowRadius = 12.0
         public static let selectedGlowOpacity: Float = 0.6
         /// How close to a frame's origin the cursor must rest to show its tooltip.
         public static let originTooltipRadius = 8.0
@@ -67,7 +67,7 @@ public struct MarkerMesh {
             for axis in FrameAxis.allCases {
                 arrow(from: frame.origin, to: frame.origin + frame.axis(axis) * length, width: width, headScale: headScale, color: colors[axis.rawValue])
             }
-            disc(at: frame.origin, radius: isSmall ? Style.smallOriginRadius : Style.originRadius, color: selected ? highlightColor : Style.dark)
+            disc(at: frame.origin, radius: isSmall ? Style.smallOriginRadius : Style.originRadius, color: selected ? Style.light : Style.dark)
         case .centerOfMass(let point):
             // The usual CG symbol: a circle in alternating dark and light quarters
             disc(at: point, radius: Style.centerOfMassRadius + 1.5, color: Style.dark)

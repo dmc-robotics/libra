@@ -23,6 +23,7 @@ public struct MarkerMesh {
         public static let selectedGlowOpacity: Float = 0.6
         /// How close to a frame's origin the cursor must rest to show its tooltip.
         public static let originTooltipRadius = 8.0
+        public static let centerOfMassTooltipRadius = centerOfMassRadius + 2
         public static let arrowLength = 10.0
         public static let arrowWidth = 8.0
         public static let centerOfMassRadius = 8.0

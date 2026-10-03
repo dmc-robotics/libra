@@ -12,7 +12,7 @@
 - [x] Each group in the side bar should have a coordinate system visibility toggle. (Parts had one for their override frame, removed along with overrides.)
 - [x] Group coordinate systems should be visibly different than the global coordinate system - a little smaller with thinner lines.
 - [x] Identify origin identity (which entity it belongs to) with tooltip on hover
-- [ ] Identify COM identity (which entity it belongs to) with tooltip on hover
+- [x] Identify COM identity (which entity it belongs to) with tooltip on hover
 
 ### Parts
 

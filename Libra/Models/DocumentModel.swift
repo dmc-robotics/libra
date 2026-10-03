@@ -306,6 +306,10 @@ final class DocumentModel {
         let summary = MassSummary(parts: selectedIDs.isEmpty ? document.parts : document.parts(selectedIDs))
         if summary.properties.mass > 0 {
             markers.append(.centerOfMass(summary.properties.centerOfMass))
+            tooltips.append(ViewerTooltip(
+                point: summary.properties.centerOfMass, radius: MarkerMesh.Style.centerOfMassTooltipRadius,
+                text: "Center of mass of \(centerOfMassOwner(in: document))"
+            ))
         }
         if let hoverSnap {
             if let edge = hoverSnap.edge, let part = document.part(edge.partID) {
@@ -324,6 +328,23 @@ final class DocumentModel {
             markers: markers,
             tooltips: tooltips
         )
+    }
+
+    /// What the center of mass marker belongs to: the selected part, assembly or group, a count of
+    /// selected parts, or the whole assembly when nothing is selected.
+    func centerOfMassOwner(in document: LibraDocument) -> String {
+        if selection.count == 1 {
+            switch selection.first {
+            case .assembly(let path): if let name = path.last { return name }
+            case .group(let id): if let group = document.group(id) { return group.name }
+            default: break
+            }
+        }
+        let partIDs = selectedPartIDs(in: document)
+        if partIDs.count == 1, let id = partIDs.first, let part = document.part(id) {
+            return part.name
+        }
+        return partIDs.isEmpty ? "the assembly" : "\(partIDs.count) selected parts"
     }
 
     /// What a frame's origin is called in the viewer, e.g. "Libra frame" or "Arm frame".

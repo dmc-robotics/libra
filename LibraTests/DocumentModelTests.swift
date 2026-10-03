@@ -158,6 +158,28 @@ import simd
         #expect(tooltips.map(\.point) == [.zero, [1, 0, 0]])
     }
 
+    @Test func centerOfMassNamesWhatItBelongsTo() throws {
+        var document = Self.makeDocument()
+        document.setMass(1, forParts: Set(document.parts.map(\.id)))
+        let createdGroup = document.createGroup(named: "Arm", partIDs: [document.parts[1].id])
+        let group = try #require(createdGroup)
+        let model = DocumentModel()
+        func centerOfMassText() -> String? {
+            model.scene(for: document, highlightColor: [1, 0, 0, 1]).tooltips.first { $0.text.hasPrefix("Center of mass") }?.text
+        }
+        #expect(centerOfMassText() == "Center of mass of the assembly")
+        model.selection = [.part(document.parts[0].id)]
+        #expect(centerOfMassText() == "Center of mass of Base")
+        model.selection = [.assembly(["Robot", "Arm"])]
+        #expect(centerOfMassText() == "Center of mass of Arm")
+        model.selection = [.group(group)]
+        #expect(centerOfMassText() == "Center of mass of Arm")
+        model.selection = [.part(document.parts[0].id), .part(document.parts[1].id)]
+        #expect(centerOfMassText() == "Center of mass of 2 selected parts")
+        model.selection = [.part(document.parts[1].id), .assembly(["Robot", "Arm"])]
+        #expect(centerOfMassText() == "Center of mass of Link")
+    }
+
     @Test func sceneDrawsShownFramesWhenNotSelected() throws {
         var document = Self.makeDocument()
         let model = DocumentModel()

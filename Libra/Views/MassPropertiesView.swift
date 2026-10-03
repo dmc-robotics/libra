@@ -124,7 +124,7 @@ extension MassPropertiesSection where MassRows == MassRow {
 extension InertiaReference {
     var name: String {
         switch self {
-        case .centerOfMass: "Center of Mass"
+        case .centerOfMass: "COM"
         case .origin: "Origin"
         }
     }

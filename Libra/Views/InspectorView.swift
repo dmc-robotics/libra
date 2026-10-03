@@ -94,18 +94,22 @@ private struct PartsInspector: View {
     private var parts: [Part] { document.parts(partIDs) }
 
     var body: some View {
+        let summary = MassSummary(parts: parts).expressed(in: document.libraFrame)
         if parts.count == 1, let part = parts.first, let index = document.parts.firstIndex(where: { $0.id == part.id }) {
-            singlePart(part, index: index)
+            singlePart(part)
+            MassPropertiesSection(summary: summary, frameName: "Libra frame") {
+                massRows(part, index: index)
+            }
         } else {
             multipleParts
+            MassPropertiesSection(summary: summary, frameName: "Libra frame")
         }
-        MassPropertiesSection(summary: MassSummary(parts: parts).expressed(in: document.libraFrame), frameName: "Libra frame")
     }
 
     // MARK: One part
 
     @ViewBuilder
-    private func singlePart(_ part: Part, index: Int) -> some View {
+    private func singlePart(_ part: Part) -> some View {
         Section("Part") {
             LabeledContent("Name", value: part.name)
             LabeledContent("Component", value: part.definitionName)
@@ -114,12 +118,15 @@ private struct PartsInspector: View {
                     .foregroundStyle(.orange)
             }
         }
-        Section("Mass") {
-            NumberField(title: "Mass", value: massBinding(index), unit: units.mass.symbol)
-            if part.hasVolume && part.mass > 0 {
-                // g/cm³ is a handy sanity check against the material
-                LabeledContent("Density", value: "\(Formatting.number(part.mass / part.volumeProperties.volume / 1000)) g/cm³")
-            }
+    }
+
+    /// The part's mass, editable, in place of the read-only total.
+    @ViewBuilder
+    private func massRows(_ part: Part, index: Int) -> some View {
+        NumberField(title: "Mass", value: massBinding(index), unit: units.mass.symbol)
+        if part.hasVolume && part.mass > 0 {
+            // g/cm³ is a handy sanity check against the material
+            LabeledContent("Density", value: "\(Formatting.number(part.mass / part.volumeProperties.volume / 1000)) g/cm³")
         }
     }
 

@@ -1,16 +1,13 @@
 import LibraKit
 import SwiftUI
 
-/// Form rows for mass, center of mass and the inertia tensor, in the current display units.
+/// Form rows for the center of mass and the inertia tensor, in the current display units.
 struct MassPropertiesView: View {
     let properties: MassProperties
     @DisplayUnitsSetting private var units
 
     var body: some View {
         let centerOfMass = properties.centerOfMass / units.length.siPerUnit
-        LabeledContent("Mass") {
-            Text("\(Formatting.number(units.mass.fromSI(properties.mass))) \(units.mass.symbol)")
-        }
         LabeledContent("Center of Mass") {
             Text("\(Formatting.number(centerOfMass.x)), \(Formatting.number(centerOfMass.y)), \(Formatting.number(centerOfMass.z)) \(units.length.symbol)")
         }
@@ -53,12 +50,32 @@ struct MassPropertiesView: View {
     }
 }
 
+/// A read-only mass, in the current display units.
+struct MassRow: View {
+    let mass: Double
+    @DisplayUnitsSetting private var units
+
+    var body: some View {
+        LabeledContent("Mass") {
+            Text("\(Formatting.number(units.mass.fromSI(mass))) \(units.mass.symbol)")
+        }
+    }
+}
+
 /// An inspector section with the full mass properties and a copy button.
-struct MassPropertiesSection: View {
+struct MassPropertiesSection<MassRows: View>: View {
     /// Already expressed in the frame named by `frameName`.
     let summary: MassSummary
     let frameName: String
+    /// Shown first, e.g. a field to edit a part's mass. A read-only total by default.
+    let massRows: MassRows
     @DisplayUnitsSetting private var units
+
+    init(summary: MassSummary, frameName: String, @ViewBuilder massRows: () -> MassRows) {
+        self.summary = summary
+        self.frameName = frameName
+        self.massRows = massRows()
+    }
 
     var body: some View {
         Section {
@@ -66,6 +83,7 @@ struct MassPropertiesSection: View {
                 Label("\(summary.unassignedCount) of \(summary.partCount) parts without mass", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
             }
+            massRows
             MassPropertiesView(properties: summary.properties)
         } header: {
             HStack {
@@ -83,5 +101,11 @@ struct MassPropertiesSection: View {
         } footer: {
             Text("In the \(frameName). Inertia is about the center of mass.")
         }
+    }
+}
+
+extension MassPropertiesSection where MassRows == MassRow {
+    init(summary: MassSummary, frameName: String) {
+        self.init(summary: summary, frameName: frameName) { MassRow(mass: summary.properties.mass) }
     }
 }

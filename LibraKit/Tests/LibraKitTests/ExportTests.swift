@@ -4,10 +4,10 @@ import Testing
 import simd
 
 @Suite struct ExportTests {
-    /// A 1 kg 0.1 m cube centered at (1, 0, 0) and an unassigned part, in one group whose frame sits at (1, 0, 0)
+    /// A 1 kg 0.1 m cube centered at (1, 0, 0) and a part with no mass, in one group whose frame sits at (1, 0, 0)
     /// turned a quarter about Z.
     static var document: LibraDocument {
-        let cube = Fixtures.boxPart(name: "Cube", size: [0.1, 0.1, 0.1], corner: [0.95, -0.05, -0.05], mass: .measured(1))
+        let cube = Fixtures.boxPart(name: "Cube", size: [0.1, 0.1, 0.1], corner: [0.95, -0.05, -0.05], mass: 1)
         let loose = Fixtures.boxPart(name: "Loose", size: [0.1, 0.1, 0.1], corner: [2, 0, 0])
         let frame = Frame.file.moved(to: [1, 0, 0]).rotatedQuarterTurn(about: .z)
         return LibraDocument(
@@ -58,7 +58,7 @@ import simd
         #expect(lines.count == 1 + 1 + 1 + 2)
         #expect(lines[0] == Substring(CSVExporter.header))
         #expect(lines[2].hasPrefix("group,Arm Link,group,1,"))
-        // The unassigned part has empty values and counts as unassigned
+        // The massless part has empty values and counts as having no mass
         #expect(lines[4] == "part,Loose,libra,,,,,,,,,,,1")
     }
 
@@ -95,10 +95,7 @@ import simd
 @Suite struct DocumentTests {
     @Test func roundTripsThroughJSON() throws {
         var document = ExportTests.document
-        document.parts[0].mass = .override(MassOverride(
-            mass: 0.2, centerOfMass: [0, 0, 0.01], inertia: InertiaTensor(xx: 1, yy: 2, zz: 3, xy: 0.1, xz: 0.2, yz: 0.3),
-            frame: Frame.file.rotatedQuarterTurn(about: .x)
-        ))
+        document.parts[0].mass = 0.2
         document.libraFrame = Frame.file.moved(to: [0.1, 0.2, 0.3])
         let decoded = try LibraDocument.decoded(from: document.encoded())
         #expect(decoded == document)

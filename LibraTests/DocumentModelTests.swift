@@ -97,7 +97,7 @@ import simd
 
     @Test func sceneMarksSelectionAndCenterOfMass() {
         var document = Self.makeDocument()
-        document.parts[0].mass = .measured(1)
+        document.parts[0].mass = 1
         let model = DocumentModel()
         model.selection = [.part(document.parts[0].id)]
         let highlight: SIMD4<Float> = [1, 0, 0, 1]
@@ -117,18 +117,6 @@ import simd
         let markers = model.scene(for: document, highlightColor: highlight).markers
         #expect(markers.contains(.triad(.file, size: .large, selected: false)))
         #expect(markers.contains(.triad(.file, size: .small, selected: true)))
-    }
-
-    @Test func sceneDrawsAShownDefaultOverrideFrame() {
-        var document = Self.makeDocument()
-        let model = DocumentModel()
-        let id = document.parts[0].id
-        document.changeMassKind(of: id, to: .override)
-        document.setShowsFrame(true, for: .override(id))
-        // It starts in the Libra frame, so it's drawn small inside the Libra frame's triad
-        let markers = model.scene(for: document, highlightColor: [1, 0, 0, 1]).markers
-        #expect(markers.contains(.triad(.file, size: .large, selected: true)))
-        #expect(markers.contains(.triad(.file, size: .small, selected: false)))
     }
 
     @Test func sceneDrawsShownFramesWhenNotSelected() throws {

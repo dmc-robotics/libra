@@ -12,11 +12,12 @@ public struct Part: Codable, Hashable, Identifiable, Sendable {
     public var color: RGBColor?
     public var volumeProperties: VolumeProperties
     public var geometry: PartGeometry
-    public var mass: MassAssignment
+    /// Weighed mass in kg, spread uniformly through the part's volume. Zero until the user enters one.
+    public var mass: Double
 
     public init(
         id: UUID = UUID(), name: String, definitionName: String, path: [String], color: RGBColor?,
-        volumeProperties: VolumeProperties, geometry: PartGeometry, mass: MassAssignment = .unassigned
+        volumeProperties: VolumeProperties, geometry: PartGeometry, mass: Double = 0
     ) {
         self.id = id
         self.name = name
@@ -28,21 +29,14 @@ public struct Part: Codable, Hashable, Identifiable, Sendable {
         self.mass = mass
     }
 
-    /// Surface bodies and other shapes without a closed volume can't take a measured mass.
+    /// Surface bodies and other shapes without a closed volume can't take a mass.
     public var hasVolume: Bool {
         volumeProperties.volume > VolumeProperties.minimumVolume
     }
 
-    /// The part's mass properties in file coordinates, or nil while unassigned.
+    /// The part's mass properties in file coordinates, or nil while it has no mass or no volume to spread it through.
     public var massProperties: MassProperties? {
-        switch mass {
-        case .unassigned:
-            nil
-        case .measured(let mass):
-            hasVolume ? MassProperties(measuredMass: mass, volumeProperties: volumeProperties) : nil
-        case .override(let values):
-            values.massProperties
-        }
+        mass > 0 && hasVolume ? MassProperties(measuredMass: mass, volumeProperties: volumeProperties) : nil
     }
 }
 

@@ -66,14 +66,6 @@ import simd
         let group = try #require(createdGroup)
         document.setFrame(Frame.file.rotatedQuarterTurn(about: .z), for: .group(group))
         #expect(document.frame(for: .group(group))?.xAxis == [0, 1, 0])
-
-        // A part has an override frame only while it has an override
-        #expect(document.frame(for: .override(ids[0])) == nil)
-        document.setFrame(moved, for: .override(ids[0]))
-        #expect(document.frame(for: .override(ids[0])) == nil)
-        document.changeMassKind(of: ids[0], to: .override)
-        document.setFrame(.file, for: .override(ids[0]))
-        #expect(document.frame(for: .override(ids[0])) == .file)
     }
 
     @Test func frameVisibility() throws {
@@ -85,14 +77,6 @@ import simd
 
         document.setShowsFrame(true, for: .group(group))
         #expect(document.showsFrame(.group(group)))
-
-        // An override frame can only be shown while the part has an override
-        document.setShowsFrame(true, for: .override(ids[1]))
-        #expect(!document.showsFrame(.override(ids[1])))
-        document.changeMassKind(of: ids[1], to: .override)
-        document.setShowsFrame(true, for: .override(ids[1]))
-        #expect(document.shownFrameTargets == [.libra, .group(group), .override(ids[1])])
-        document.changeMassKind(of: ids[1], to: .measured)
         #expect(document.shownFrameTargets == [.libra, .group(group)])
 
         // The Libra frame always shows
@@ -100,39 +84,11 @@ import simd
         #expect(document.showsFrame(.libra))
     }
 
-    @Test func changingMassKindCarriesValuesOver() throws {
-        var document = Self.makeDocument()
-        let id = document.parts[0].id
-        document.libraFrame = Frame.file.moved(to: [0, 1, 0])
-        document.setMass(.measured(2), forParts: [id])
-        let measured = try #require(document.part(id)?.massProperties)
-
-        // Measured → override keeps the same physics, entered in the Libra frame
-        document.changeMassKind(of: id, to: .override)
-        guard case .override(let values) = document.part(id)?.mass else {
-            Issue.record("expected an override")
-            return
-        }
-        #expect(values.frame == document.libraFrame)
-        expectClose(values.centerOfMass, measured.centerOfMass - [0, 1, 0])
-        let overridden = try #require(document.part(id)?.massProperties)
-        expectClose(overridden.mass, measured.mass)
-        expectClose(overridden.centerOfMass, measured.centerOfMass)
-        expectClose(overridden.inertia, measured.inertia)
-
-        // Override → measured keeps the mass
-        document.changeMassKind(of: id, to: .measured)
-        #expect(document.part(id)?.mass == .measured(2))
-
-        document.changeMassKind(of: id, to: .unassigned)
-        #expect(document.part(id)?.mass == .unassigned)
-    }
-
     @Test func setMassForSeveralParts() {
         var document = Self.makeDocument()
         let ids = Set(document.parts.prefix(2).map(\.id))
-        document.setMass(.measured(0.5), forParts: ids)
-        #expect(document.parts.map(\.mass.kind) == [.measured, .measured, .unassigned])
+        document.setMass(0.5, forParts: ids)
+        #expect(document.parts.map(\.mass) == [0.5, 0.5, 0])
     }
 
     @Test func summaryWithoutMassStaysZeroInAnyFrame() {

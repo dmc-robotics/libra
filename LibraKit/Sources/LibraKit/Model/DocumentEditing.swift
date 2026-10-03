@@ -1,10 +1,9 @@
 import Foundation
 
-/// A frame that can be edited: the Libra frame, a group's frame, or the frame a part's override values are entered in.
+/// A frame that can be edited: the Libra frame or a group's frame.
 public enum FrameTarget: Hashable, Sendable {
     case libra
     case group(UUID)
-    case override(UUID)
 }
 
 /// Every change to a document goes through these, so its rules live in one place:
@@ -22,8 +21,6 @@ extension LibraDocument {
             libraFrame
         case .group(let id):
             group(id)?.frame
-        case .override(let id):
-            if case .override(let values) = part(id)?.mass { values.frame } else { nil }
         }
     }
 
@@ -34,24 +31,16 @@ extension LibraDocument {
         case .group(let id):
             guard let index = groups.firstIndex(where: { $0.id == id }) else { return }
             groups[index].frame = frame
-        case .override(let id):
-            guard let index = parts.firstIndex(where: { $0.id == id }),
-                  case .override(var values) = parts[index].mass else { return }
-            values.frame = frame
-            parts[index].mass = .override(values)
         }
     }
 
-    /// Whether the viewer draws a frame even when it isn't being edited. The Libra frame always shows;
-    /// an override frame shows only while its part has an override.
+    /// Whether the viewer draws a frame even when it isn't being edited. The Libra frame always shows.
     public func showsFrame(_ target: FrameTarget) -> Bool {
         switch target {
         case .libra:
             true
         case .group(let id):
             group(id)?.showsFrame ?? false
-        case .override(let id):
-            if case .override(let values) = part(id)?.mass { values.showsFrame } else { false }
         }
     }
 
@@ -62,17 +51,12 @@ extension LibraDocument {
         case .group(let id):
             guard let index = groups.firstIndex(where: { $0.id == id }) else { return }
             groups[index].showsFrame = shows
-        case .override(let id):
-            guard let index = parts.firstIndex(where: { $0.id == id }),
-                  case .override(var values) = parts[index].mass else { return }
-            values.showsFrame = shows
-            parts[index].mass = .override(values)
         }
     }
 
-    /// The frames the viewer draws when none is being edited: the Libra frame, then shown group and override frames.
+    /// The frames the viewer draws when none is being edited: the Libra frame, then shown group frames.
     public var shownFrameTargets: [FrameTarget] {
-        let candidates = [FrameTarget.libra] + groups.map { .group($0.id) } + parts.map { .override($0.id) }
+        let candidates = [FrameTarget.libra] + groups.map { .group($0.id) }
         return candidates.filter(showsFrame)
     }
 
@@ -131,31 +115,10 @@ extension LibraDocument {
 
     // MARK: Mass
 
-    public mutating func setMass(_ assignment: MassAssignment, forParts partIDs: Set<UUID>) {
+    /// Sets the mass, in kg, of each of the parts.
+    public mutating func setMass(_ mass: Double, forParts partIDs: Set<UUID>) {
         for index in parts.indices where partIDs.contains(parts[index].id) {
-            parts[index].mass = assignment
-        }
-    }
-
-    /// Switches how a part gets its mass, carrying over what it has: a measured mass keeps the current mass,
-    /// and an override starts from the current properties expressed in the Libra frame.
-    public mutating func changeMassKind(of partID: UUID, to kind: MassAssignment.Kind) {
-        guard let index = parts.firstIndex(where: { $0.id == partID }), parts[index].mass.kind != kind else { return }
-        let part = parts[index]
-        let current = part.massProperties
-        switch kind {
-        case .unassigned:
-            parts[index].mass = .unassigned
-        case .measured:
-            parts[index].mass = .measured(current?.mass ?? 0)
-        case .override:
-            let local = current?.expressed(in: libraFrame)
-            parts[index].mass = .override(MassOverride(
-                mass: local?.mass ?? 0,
-                centerOfMass: local?.centerOfMass ?? libraFrame.localPoint(part.volumeProperties.centroid),
-                inertia: local?.inertia ?? .zero,
-                frame: libraFrame
-            ))
+            parts[index].mass = mass
         }
     }
 }

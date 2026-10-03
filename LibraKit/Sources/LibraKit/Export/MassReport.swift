@@ -17,8 +17,7 @@ public struct MassReport: Sendable {
     public struct PartEntry: Sendable {
         public var name: String
         public var path: [String]
-        public var assignment: String
-        /// In the Libra frame; nil while unassigned.
+        /// In the Libra frame; nil while the part has no mass.
         public var properties: MassProperties?
     }
 
@@ -52,7 +51,6 @@ public struct MassReport: Sendable {
             PartEntry(
                 name: part.name,
                 path: part.path,
-                assignment: part.mass.kind.rawValue,
                 properties: part.massProperties?.expressed(in: libraFrame)
             )
         }

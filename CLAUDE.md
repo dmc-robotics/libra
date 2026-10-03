@@ -29,7 +29,7 @@ This project is for personal use only and will only be used for hobby purposes. 
 - `LibraKit/`: local Swift package with all non-UI logic; no SwiftUI imports
   - `Sources/StepBridge/`: C++ over OpenCASCADE behind a plain C API (`StepBridge.h`). Reads the XCAF assembly tree, flattens each part instance to file coordinates, meshes it, computes exact unit-density volume properties, and records snap features (face/edge kinds, centers, axes). All output is SI. Catches every OCCT exception.
   - `Sources/StepImport/`: Swift `StepImporter` actor (OCCT settings are global, so imports run one at a time)
-  - `Sources/LibraKit/Model/`: `LibraDocument` (the .libra file: parts, groups, Libra frame), `DocumentEditing` (every change to a document, plus `FrameTarget`), `Part`, `PartGeometry`, `MassAssignment`, `Frame`, `InertiaTensor`, `DisplayUnits`
+  - `Sources/LibraKit/Model/`: `LibraDocument` (the .libra file: parts, groups, Libra frame), `DocumentEditing` (every change to a document, plus `FrameTarget`), `Part`, `PartGeometry`, `Frame`, `InertiaTensor`, `DisplayUnits`
   - `Mass/`: combining parts (parallel axis theorem) and re-expressing in frames
   - `View/`: `OrthographicCamera` (navigation math, pixel → ray), `ViewerScene` (what the viewer draws), `MarkerMesh` (screen-sized overlay triangles)
   - `Picking/`: ray picking and `Snapper` (feature under the cursor → origin point or direction)

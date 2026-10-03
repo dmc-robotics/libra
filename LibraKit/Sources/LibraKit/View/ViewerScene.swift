@@ -44,7 +44,7 @@ public struct FeatureReference: Hashable, Sendable {
     }
 }
 
-/// The Libra frame is drawn large; group and override frames small, so a frame that coincides with it still shows.
+/// The Libra frame is drawn large; group frames small, so a frame that coincides with it still shows.
 public enum TriadSize: Hashable, Sendable {
     case large, small
 }

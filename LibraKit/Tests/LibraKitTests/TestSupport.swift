@@ -95,7 +95,7 @@ enum Fixtures {
         )
     }
 
-    static func boxPart(name: String = "Box", size: SIMD3<Double>, corner: SIMD3<Double> = .zero, mass: MassAssignment = .unassigned) -> Part {
+    static func boxPart(name: String = "Box", size: SIMD3<Double>, corner: SIMD3<Double> = .zero, mass: Double = 0) -> Part {
         Part(
             name: name, definitionName: name, path: ["Assembly"], color: nil,
             volumeProperties: boxProperties(size: size, corner: corner),

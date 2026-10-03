@@ -85,16 +85,6 @@ private struct GroupInspector: View {
 
 // MARK: Parts
 
-private extension MassAssignment.Kind {
-    var title: String {
-        switch self {
-        case .unassigned: "None"
-        case .measured: "Measured"
-        case .override: "Override"
-        }
-    }
-}
-
 private struct PartsInspector: View {
     let partIDs: Set<UUID>
     @Binding var document: LibraDocument
@@ -136,83 +126,24 @@ private struct PartsInspector: View {
                 Text("\(Formatting.number(part.volumeProperties.volume / pow(units.length.siPerUnit, 3))) \(units.length.symbol)³")
             }
             if !part.hasVolume {
-                Label("No closed volume (a surface body?). Use an override.", systemImage: "exclamationmark.triangle.fill")
+                Label("No closed volume (a surface body?), so its mass is left out.", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
             }
         }
         Section("Mass") {
-            Picker("Source", selection: kindBinding(part.id)) {
-                ForEach(MassAssignment.Kind.allCases) { kind in
-                    Text(kind.title).tag(kind)
-                }
-            }
-            .pickerStyle(.segmented)
-            switch part.mass {
-            case .unassigned:
-                EmptyView()
-            case .measured(let mass):
-                NumberField(title: "Mass", value: measuredBinding(index), unit: units.mass.symbol)
-                if part.hasVolume {
-                    // g/cm³ is a handy sanity check against the material
-                    LabeledContent("Density", value: "\(Formatting.number(mass / part.volumeProperties.volume / 1000)) g/cm³")
-                }
-            case .override:
-                overrideFields(index)
-            }
-        }
-        if case .override = part.mass {
-            Section {
-                FrameEditor(target: .override(part.id), document: $document, model: model)
-            } header: {
-                Text("Override Frame")
-            } footer: {
-                Text("The override values are in this frame, e.g. a datasheet's axes. Relative to the Libra frame.")
+            NumberField(title: "Mass", value: massBinding(index), unit: units.mass.symbol)
+            if part.hasVolume && part.mass > 0 {
+                // g/cm³ is a handy sanity check against the material
+                LabeledContent("Density", value: "\(Formatting.number(part.mass / part.volumeProperties.volume / 1000)) g/cm³")
             }
         }
     }
 
-    private func kindBinding(_ partID: UUID) -> Binding<MassAssignment.Kind> {
+    private func massBinding(_ index: Int) -> Binding<Double> {
         Binding {
-            document.part(partID)?.mass.kind ?? .unassigned
-        } set: { kind in
-            document.changeMassKind(of: partID, to: kind)
-        }
-    }
-
-    private func measuredBinding(_ index: Int) -> Binding<Double> {
-        Binding {
-            if case .measured(let mass) = document.parts[index].mass { units.mass.fromSI(mass) } else { 0 }
+            units.mass.fromSI(document.parts[index].mass)
         } set: {
-            document.parts[index].mass = .measured(units.mass.toSI($0))
-        }
-    }
-
-    @ViewBuilder
-    private func overrideFields(_ index: Int) -> some View {
-        NumberField(title: "Mass", value: overrideBinding(index, \.mass, units.mass), unit: units.mass.symbol)
-        ForEach(FrameAxis.allCases, id: \.self) { axis in
-            NumberField(
-                title: "COM \(axis.name)",
-                value: overrideBinding(index, \.centerOfMass[axis.rawValue], units.length),
-                unit: units.length.symbol
-            )
-        }
-        let components: [(String, WritableKeyPath<MassOverride, Double>)] = [
-            ("Ixx", \.inertia.xx), ("Iyy", \.inertia.yy), ("Izz", \.inertia.zz),
-            ("Ixy", \.inertia.xy), ("Ixz", \.inertia.xz), ("Iyz", \.inertia.yz)
-        ]
-        ForEach(components, id: \.0) { name, keyPath in
-            NumberField(title: name, value: overrideBinding(index, keyPath, units.inertia), unit: units.inertia.symbol)
-        }
-    }
-
-    private func overrideBinding(_ index: Int, _ keyPath: WritableKeyPath<MassOverride, Double>, _ unit: some DisplayUnit) -> Binding<Double> {
-        Binding {
-            if case .override(let values) = document.parts[index].mass { unit.fromSI(values[keyPath: keyPath]) } else { 0 }
-        } set: { value in
-            guard case .override(var values) = document.parts[index].mass else { return }
-            values[keyPath: keyPath] = unit.toSI(value)
-            document.parts[index].mass = .override(values)
+            document.parts[index].mass = max(0, units.mass.toSI($0))
         }
     }
 
@@ -225,22 +156,18 @@ private struct PartsInspector: View {
             HStack {
                 Spacer()
                 Button("Clear") {
-                    setMass(.unassigned)
+                    document.setMass(0, forParts: partIDs)
                 }
                 .help("Remove the mass from all \(parts.count) parts")
                 Button("Apply") {
-                    setMass(.measured(units.mass.toSI(massForEach)))
+                    document.setMass(units.mass.toSI(massForEach), forParts: partIDs)
                 }
                 .disabled(massForEach <= 0)
-                .help("Give each of the \(parts.count) parts this measured mass")
+                .help("Give each of the \(parts.count) parts this mass")
             }
         } header: {
             Text("Mass of \(parts.count) Parts")
         }
-    }
-
-    private func setMass(_ assignment: MassAssignment) {
-        document.setMass(assignment, forParts: partIDs)
     }
 
     // MARK: Groups

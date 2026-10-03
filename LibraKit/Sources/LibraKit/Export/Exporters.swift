@@ -73,7 +73,6 @@ enum JSONExporter {
     struct PartEntry: Encodable {
         var name: String
         var path: [String]
-        var assignment: String
         var mass: Double?
         var centerOfMass: [Double]?
         var inertia: InertiaTensor?
@@ -96,7 +95,6 @@ enum JSONExporter {
                 PartEntry(
                     name: part.name,
                     path: part.path,
-                    assignment: part.assignment,
                     mass: part.properties?.mass,
                     centerOfMass: part.properties.map { [$0.centerOfMass.x, $0.centerOfMass.y, $0.centerOfMass.z] },
                     inertia: part.properties?.inertia

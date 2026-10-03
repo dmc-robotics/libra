@@ -9,15 +9,15 @@
 ### Coordinate Systems
 
 - [x] When a coordinate system is selected, it should highlight (subtle color change/glow around the origin dot)
-- [x] Each group and part in the side bar should have a coordinate system visibility toggle.
-- [x] Group/part coordinate systems should be visibly different than the global coordinate system - a little smaller with thinner lines.
+- [x] Each group in the side bar should have a coordinate system visibility toggle. (Parts had one for their override frame, removed along with overrides.)
+- [x] Group coordinate systems should be visibly different than the global coordinate system - a little smaller with thinner lines.
 
 
 ### Parts
 
 - [ ] Right clicking a part in the side bar or the viewport should bring up a menu with "Select Others". This should replace the "Select All" button on the right sidebar.
 - [ ] Delete the Assembly line from the right hand side bar
-- [ ] Remove the option for "None" under source in the right side bar. Default to "Measured".
+- [x] Remove the mass source options (None and Override). A part just has a mass, which defaults to 0 g.
 - [ ] Delete the group line from the right side bar
 
 ### Groups

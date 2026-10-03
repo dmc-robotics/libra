@@ -51,9 +51,6 @@ struct SidebarView: View {
             HStack {
                 Label(node.name, systemImage: "cube")
                 Spacer()
-                if case .override = part.mass {
-                    FrameVisibilityToggle(target: .override(id), document: $document)
-                }
                 MassStatusIcon(part: part)
             }
         } else {
@@ -62,7 +59,7 @@ struct SidebarView: View {
     }
 }
 
-/// Shows or hides a group's or part's coordinate system in the viewer.
+/// Shows or hides a group's coordinate system in the viewer.
 struct FrameVisibilityToggle: View {
     let target: FrameTarget
     @Binding var document: LibraDocument
@@ -87,23 +84,18 @@ struct MassStatusIcon: View {
 
     var body: some View {
         Group {
-            switch part.mass {
-            case .unassigned:
+            if part.mass <= 0 {
                 Image(systemName: "circle.dashed")
                     .foregroundStyle(.tertiary)
                     .help("No mass yet")
-            case .measured where !part.hasVolume:
+            } else if !part.hasVolume {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                    .help("This part has no volume, so a measured mass can't be spread through it. Use an override.")
-            case .measured:
+                    .help("This part has no volume, so its mass can't be spread through it and is left out.")
+            } else {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                    .help("Measured mass")
-            case .override:
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.blue)
-                    .help("Override values")
+                    .help("Mass assigned")
             }
         }
         .imageScale(.small)

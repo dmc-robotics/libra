@@ -5,7 +5,7 @@ import simd
 @Suite struct MassTests {
     @Test func measuredMassScalesUnitDensityInertia() throws {
         let size = SIMD3<Double>(0.1, 0.2, 0.3)
-        let part = Fixtures.boxPart(size: size, mass: .measured(2))
+        let part = Fixtures.boxPart(size: size, mass: 2)
         let properties = try #require(part.massProperties)
         expectClose(properties.mass, 2)
         expectClose(properties.centerOfMass, size / 2)
@@ -15,9 +15,9 @@ import simd
         ))
     }
 
-    @Test func unassignedAndVolumelessPartsHaveNoProperties() {
+    @Test func masslessAndVolumelessPartsHaveNoProperties() {
         #expect(Fixtures.boxPart(size: [1, 1, 1]).massProperties == nil)
-        var flat = Fixtures.boxPart(size: [1, 1, 1], mass: .measured(1))
+        var flat = Fixtures.boxPart(size: [1, 1, 1], mass: 1)
         flat.volumeProperties.volume = 0
         #expect(flat.massProperties == nil)
     }
@@ -52,19 +52,6 @@ import simd
         expectClose(local.inertia, InertiaTensor(xx: 2, yy: 1, zz: 3, xy: 0, xz: 0, yz: 0))
     }
 
-    @Test func overrideInItsOwnFrameRoundTrips() {
-        let frame = Frame.file.moved(to: [0.5, 0, 0]).rotatedQuarterTurn(about: .x)
-        let override = MassOverride(
-            mass: 0.25, centerOfMass: [0, 0, 0.1], inertia: InertiaTensor(xx: 1e-4, yy: 2e-4, zz: 3e-4, xy: 1e-5, xz: 0, yz: 0), frame: frame
-        )
-        let file = override.massProperties
-        // Frame Z is file -Y after a quarter turn about X
-        expectClose(file.centerOfMass, [0.5, -0.1, 0])
-        let back = file.expressed(in: frame)
-        expectClose(back.centerOfMass, override.centerOfMass)
-        expectClose(back.inertia, override.inertia)
-    }
-
     @Test func inertiaAboutOrigin() {
         let properties = MassProperties(mass: 2, centerOfMass: [0, 0, 3], inertia: .zero)
         expectClose(properties.inertiaAboutOrigin, InertiaTensor(xx: 18, yy: 18, zz: 0, xy: 0, xz: 0, yz: 0))
@@ -72,8 +59,8 @@ import simd
 
     @Test func summaryCountsUnassigned() {
         let parts = [
-            Fixtures.boxPart(size: [1, 1, 1], mass: .measured(1)),
-            Fixtures.boxPart(size: [1, 1, 1], corner: [2, 0, 0], mass: .measured(1)),
+            Fixtures.boxPart(size: [1, 1, 1], mass: 1),
+            Fixtures.boxPart(size: [1, 1, 1], corner: [2, 0, 0], mass: 1),
             Fixtures.boxPart(size: [1, 1, 1])
         ]
         let summary = MassSummary(parts: parts)

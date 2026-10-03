@@ -12,7 +12,7 @@ import Testing
     @Test func shrinkingTheWindowSettles() {
         // Masses make the status bar and the inspector's mass section show long numbers
         var content = DocumentModelTests.makeDocument()
-        content.setMass(.measured(0.123456), forParts: Set(content.parts.map(\.id)))
+        content.setMass(0.123456, forParts: Set(content.parts.map(\.id)))
         let document = LibraFileDocument(content: content)
         let root = DocumentView(document: .constant(document), fileURL: nil)
             .frame(minWidth: Layout.windowMinWidth, minHeight: Layout.windowMinHeight)

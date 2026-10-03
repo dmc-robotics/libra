@@ -56,7 +56,7 @@ public struct MassSummary: Hashable, Sendable {
     /// In file coordinates.
     public var properties: MassProperties
     public var partCount: Int
-    /// Parts with no mass yet, or a measured mass but no volume.
+    /// Parts with no mass yet, or a mass but no volume to spread it through.
     public var unassignedCount: Int
 
     public init(parts: [Part]) {

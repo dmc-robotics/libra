@@ -18,7 +18,7 @@
 - [x] Right clicking a part in the side bar or the viewport should bring up a menu with "Select Others". This should replace the "Select All" button on the right sidebar.
 - [x] Delete the Assembly line from the right hand side bar
 - [x] Remove the mass source options (None and Override). A part just has a mass, which defaults to 0 g.
-- [ ] Delete the group line from the right side bar
+- [x] Delete the group line from the right side bar
 
 ### Groups
 

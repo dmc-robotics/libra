@@ -15,7 +15,7 @@ struct InspectorView: View {
                 if partIDs.isEmpty {
                     LibraFrameInspector(document: $document, model: model)
                 } else {
-                    PartsInspector(partIDs: partIDs, document: $document, model: model)
+                    PartsInspector(partIDs: partIDs, document: $document)
                 }
             }
         }
@@ -88,7 +88,6 @@ private struct GroupInspector: View {
 private struct PartsInspector: View {
     let partIDs: Set<UUID>
     @Binding var document: LibraDocument
-    @Bindable var model: DocumentModel
     @DisplayUnitsSetting private var units
     @State private var massForEach = 0.0
 
@@ -100,7 +99,6 @@ private struct PartsInspector: View {
         } else {
             multipleParts
         }
-        groupSection
         MassPropertiesSection(summary: MassSummary(parts: parts).expressed(in: document.libraFrame), frameName: "Libra frame")
     }
 
@@ -156,45 +154,6 @@ private struct PartsInspector: View {
             }
         } header: {
             Text("Mass of \(parts.count) Parts")
-        }
-    }
-
-    // MARK: Groups
-
-    private enum GroupChoice: Hashable {
-        case none, mixed, new
-        case group(UUID)
-    }
-
-    private var groupSection: some View {
-        Section {
-            Picker("Group", selection: groupChoice) {
-                Text("None").tag(GroupChoice.none)
-                ForEach(document.groups) { group in
-                    Text(group.name).tag(GroupChoice.group(group.id))
-                }
-                if groupChoice.wrappedValue == .mixed {
-                    Text("Multiple").tag(GroupChoice.mixed)
-                }
-                Divider()
-                Text("New Group").tag(GroupChoice.new)
-            }
-            .help("The group these parts belong to, which moves as one rigid body")
-        }
-    }
-
-    private var groupChoice: Binding<GroupChoice> {
-        Binding {
-            let groups = Set(partIDs.map { document.group(containing: $0)?.id })
-            guard groups.count == 1, let only = groups.first else { return .mixed }
-            return only.map(GroupChoice.group) ?? .none
-        } set: { choice in
-            switch choice {
-            case .none: document.removeFromGroups(partIDs)
-            case .group(let id): document.addParts(partIDs, toGroup: id)
-            case .new: model.createGroup(in: &document)
-            case .mixed: break
-            }
         }
     }
 }

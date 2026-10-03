@@ -60,7 +60,7 @@ private struct GroupInspector: View {
                     HStack {
                         Text("\(summary.partCount)")
                         Button("Select") {
-                            model.selection = Set(group.partIDs.map(SidebarItem.part))
+                            model.selectParts(ofGroup: groupID, in: document)
                         }
                         .help("Select this group's parts")
                     }

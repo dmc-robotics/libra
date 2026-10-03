@@ -54,6 +54,10 @@ struct SidebarView: View {
                 }
             }
             if items.count == 1, case .group(let id) = items.first {
+                Button("Select Parts") {
+                    model.selectParts(ofGroup: id, in: document)
+                }
+                Divider()
                 Button("Delete Group", role: .destructive) {
                     model.deleteGroup(id, in: &document)
                 }

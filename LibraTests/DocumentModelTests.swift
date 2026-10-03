@@ -111,6 +111,16 @@ import simd
         #expect(document.group(group)?.partIDs == document.parts.map(\.id))
     }
 
+    @Test func selectPartsOfAGroup() throws {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        let createdGroup = document.createGroup(partIDs: document.parts.map(\.id))
+        let group = try #require(createdGroup)
+        model.selection = [.group(group)]
+        model.selectParts(ofGroup: group, in: document)
+        #expect(model.selection == Set(document.parts.map { .part($0.id) }))
+    }
+
     @Test func selectOthersSelectsEveryInstance() {
         var document = Self.makeDocument()
         document.parts.append(Self.cube(name: "Base", path: ["Robot"], corner: [0.4, 0, 0]))

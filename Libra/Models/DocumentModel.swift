@@ -259,6 +259,10 @@ final class DocumentModel {
         }
     }
 
+    func selectParts(ofGroup id: UUID, in document: LibraDocument) {
+        selection = Set((document.group(id)?.partIDs ?? []).map(SidebarItem.part))
+    }
+
     func deleteGroup(_ id: UUID, in document: inout LibraDocument) {
         document.deleteGroup(id)
         selection.remove(.group(id))

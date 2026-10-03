@@ -111,9 +111,6 @@ private struct PartsInspector: View {
         Section("Part") {
             LabeledContent("Name", value: part.name)
             LabeledContent("Component", value: part.definitionName)
-            if !part.path.isEmpty {
-                LabeledContent("Assembly", value: part.path.joined(separator: " › "))
-            }
             LabeledContent("Volume") {
                 Text("\(Formatting.number(part.volumeProperties.volume / pow(units.length.siPerUnit, 3))) \(units.length.symbol)³")
             }

@@ -38,6 +38,19 @@ enum ColorMode: String, CaseIterable, Identifiable {
     }
 }
 
+/// Something the right-click menu can do to the parts it was opened on.
+enum PartCommand: Hashable {
+    case selectOthers
+    case newGroup
+}
+
+struct PartMenuItem: Hashable, Identifiable {
+    var title: String
+    var command: PartCommand
+
+    var id: PartCommand { command }
+}
+
 /// What the viewer reports about the cursor.
 struct ViewerPointer {
     var hit: PickHit?
@@ -247,6 +260,25 @@ final class DocumentModel {
     func deleteGroup(_ id: UUID, in document: inout LibraDocument) {
         document.deleteGroup(id)
         selection.remove(.group(id))
+    }
+
+    // MARK: Context menus
+
+    /// The right-click menu for parts, the same in the sidebar and the viewer.
+    func partMenu(in document: LibraDocument) -> [PartMenuItem] {
+        [
+            PartMenuItem(title: "Select Others", command: .selectOthers),
+            PartMenuItem(title: "New Group", command: .newGroup)
+        ]
+    }
+
+    func perform(_ command: PartCommand, on partIDs: Set<UUID>, in document: inout LibraDocument) {
+        switch command {
+        case .selectOthers:
+            selectOthers(like: partIDs, in: document)
+        case .newGroup:
+            createGroup(from: Set(partIDs.map(SidebarItem.part)), in: &document)
+        }
     }
 
     // MARK: Import

@@ -27,7 +27,7 @@
 ### Groups
 
 
-- [ ] Right click menus should work when clicking parts in the viewport, not just the parts/group sidebar.
+- [x] Right click menus should work when clicking parts in the viewport, not just the parts/group sidebar.
 - [ ] When right clicking part(s), the menu should have "Add to group" along with "New Group".
 - [ ] Right clicking a group in the side bar should bring up a menu with "Select Parts"
 - [ ] Double clicking a group in the side bar should allow the name to be edited in place.

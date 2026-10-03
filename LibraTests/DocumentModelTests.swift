@@ -86,6 +86,16 @@ import simd
         #expect(model.contextMenuPartIDs(for: Self.pointer(hitting: link), in: document) == nil)
     }
 
+    @Test func partMenuMakesAGroup() throws {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        #expect(model.partMenu(in: document).map(\.title) == ["Select Others", "New Group"])
+        model.perform(.newGroup, on: [document.parts[1].id], in: &document)
+        let group = try #require(document.groups.first)
+        #expect(group.partIDs == [document.parts[1].id])
+        #expect(model.selection == [.group(group.id)])
+    }
+
     @Test func selectOthersSelectsEveryInstance() {
         var document = Self.makeDocument()
         document.parts.append(Self.cube(name: "Base", path: ["Robot"], corner: [0.4, 0, 0]))

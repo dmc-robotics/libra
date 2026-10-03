@@ -32,17 +32,13 @@ struct SidebarView: View {
             }
         }
         .contextMenu(forSelectionType: SidebarItem.self) { items in
-            let clickedPartIDs = Set(items.compactMap { if case .part(let id) = $0 { id } else { nil } })
-            if !clickedPartIDs.isEmpty {
-                Button("Select Others") {
-                    model.selectOthers(like: clickedPartIDs, in: document)
-                }
-                .help("Select every instance of the same component")
-                Divider()
-            }
-            if items.contains(where: { if case .group = $0 { false } else { true } }) {
-                Button("New Group from Selection") {
-                    model.createGroup(from: items, in: &document)
+            // Parts and assemblies get the same menu as parts in the viewer
+            let partIDs = model.partIDs(of: items.filter { if case .group = $0 { false } else { true } }, in: document)
+            if !partIDs.isEmpty {
+                ForEach(model.partMenu(in: document)) { item in
+                    Button(item.title) {
+                        model.perform(item.command, on: partIDs, in: &document)
+                    }
                 }
             }
             if items.count == 1, case .group(let id) = items.first {

@@ -119,9 +119,9 @@ struct DocumentView: View {
 
     private func viewerMenu(for pointer: ViewerPointer) -> [ViewerMenuItem] {
         guard let partIDs = model.contextMenuPartIDs(for: pointer, in: document.content) else { return [] }
-        return [
-            ViewerMenuItem(title: "Select Others") { model.selectOthers(like: partIDs, in: document.content) }
-        ]
+        return model.partMenu(in: document.content).map { item in
+            ViewerMenuItem(title: item.title) { model.perform(item.command, on: partIDs, in: &document.content) }
+        }
     }
 
     @ToolbarContentBuilder

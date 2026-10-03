@@ -15,12 +15,7 @@ struct SidebarView: View {
             }
             Section("Groups") {
                 ForEach(document.groups) { group in
-                    HStack {
-                        Label(group.name, systemImage: "cube.fill")
-                        Spacer()
-                        FrameVisibilityToggle(target: .group(group.id), document: $document)
-                    }
-                    .badge(group.partIDs.count)
+                    GroupRow(group: group, document: $document, model: model)
                         .tag(SidebarItem.group(group.id))
                 }
                 if document.groups.isEmpty {
@@ -57,11 +52,16 @@ struct SidebarView: View {
                 Button("Select Parts") {
                     model.selectParts(ofGroup: id, in: document)
                 }
+                Button("Rename") {
+                    model.renamingGroupID = id
+                }
                 Divider()
                 Button("Delete Group", role: .destructive) {
                     model.deleteGroup(id, in: &document)
                 }
             }
+        } primaryAction: { items in
+            model.primaryAction(on: items)
         }
     }
 
@@ -76,6 +76,47 @@ struct SidebarView: View {
         } else {
             Label(node.name, systemImage: "square.stack.3d.up")
         }
+    }
+}
+
+/// A group in the sidebar. Double-click or Rename edits its name in place: Return or clicking away
+/// keeps the new name, Escape cancels.
+private struct GroupRow: View {
+    let group: PartGroup
+    @Binding var document: LibraDocument
+    @Bindable var model: DocumentModel
+    @State private var draftName = ""
+    @FocusState private var isNameFocused: Bool
+
+    private var isRenaming: Bool { model.renamingGroupID == group.id }
+
+    var body: some View {
+        HStack {
+            if isRenaming {
+                Label {
+                    TextField("Name", text: $draftName)
+                        .focused($isNameFocused)
+                        .onSubmit { model.finishRenaming(group.id, to: draftName, in: &document) }
+                        .onExitCommand { model.renamingGroupID = nil }
+                        .onChange(of: isNameFocused) { _, isFocused in
+                            if !isFocused && isRenaming {
+                                model.finishRenaming(group.id, to: draftName, in: &document)
+                            }
+                        }
+                        .task {
+                            draftName = group.name
+                            isNameFocused = true
+                        }
+                } icon: {
+                    Image(systemName: "cube.fill")
+                }
+            } else {
+                Label(group.name, systemImage: "cube.fill")
+            }
+            Spacer()
+            FrameVisibilityToggle(target: .group(group.id), document: $document)
+        }
+        .badge(group.partIDs.count)
     }
 }
 

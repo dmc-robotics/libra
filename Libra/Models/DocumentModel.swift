@@ -79,6 +79,8 @@ final class DocumentModel {
     var isImporting = false
     var errorMessage: String?
     var isShowingExport = false
+    /// The group whose name the sidebar is editing in place.
+    var renamingGroupID: UUID?
 
     @ObservationIgnored let viewer = ViewerController()
     @ObservationIgnored private var picker = PartPicker(parts: [])
@@ -257,6 +259,24 @@ final class DocumentModel {
         if let id = document.createGroup(partIDs: partIDs(of: items ?? selection, in: document)) {
             selection = [.group(id)]
         }
+    }
+
+    /// Double-click in the sidebar: one group starts renaming in place.
+    func primaryAction(on items: Set<SidebarItem>) {
+        if items.count == 1, case .group(let id) = items.first {
+            renamingGroupID = id
+        }
+    }
+
+    /// Ends renaming a group, keeping `name` unless it's blank.
+    func finishRenaming(_ id: UUID, to name: String, in document: inout LibraDocument) {
+        if renamingGroupID == id {
+            renamingGroupID = nil
+        }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let index = document.groups.firstIndex(where: { $0.id == id }),
+              document.groups[index].name != trimmed else { return }
+        document.groups[index].name = trimmed
     }
 
     func selectParts(ofGroup id: UUID, in document: LibraDocument) {

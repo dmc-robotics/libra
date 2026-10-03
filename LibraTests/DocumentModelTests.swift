@@ -121,6 +121,28 @@ import simd
         #expect(model.selection == Set(document.parts.map { .part($0.id) }))
     }
 
+    @Test func doubleClickRenamesAGroup() throws {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        let createdGroup = document.createGroup(named: "Arm", partIDs: [document.parts[1].id])
+        let group = try #require(createdGroup)
+
+        // Only a single group renames
+        model.primaryAction(on: [.part(document.parts[0].id)])
+        #expect(model.renamingGroupID == nil)
+        model.primaryAction(on: [.group(group)])
+        #expect(model.renamingGroupID == group)
+
+        model.finishRenaming(group, to: "  Forearm \n", in: &document)
+        #expect(document.group(group)?.name == "Forearm")
+        #expect(model.renamingGroupID == nil)
+
+        // A blank name keeps the old one
+        model.primaryAction(on: [.group(group)])
+        model.finishRenaming(group, to: "   ", in: &document)
+        #expect(document.group(group)?.name == "Forearm")
+    }
+
     @Test func selectOthersSelectsEveryInstance() {
         var document = Self.makeDocument()
         document.parts.append(Self.cube(name: "Base", path: ["Robot"], corner: [0.4, 0, 0]))

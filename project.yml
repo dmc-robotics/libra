@@ -36,6 +36,7 @@ targets:
     info:
       path: Libra/Info.plist
       properties:
+        CFBundleIconFile: AppIcon
         CFBundleDocumentTypes:
           - CFBundleTypeName: Libra Document
             CFBundleTypeRole: Editor

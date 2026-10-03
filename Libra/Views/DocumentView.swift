@@ -22,6 +22,8 @@ struct DocumentView: View {
             }
         }
         .focusedSceneValue(\.documentActions, actions)
+        .onAppear { model.documentOpened(at: fileURL) }
+        .onChange(of: fileURL) { model.documentMoved(to: $1) }
         .fileImporter(isPresented: $isImporterPresented, allowedContentTypes: UTType.stepFiles) { result in
             if case .success(let url) = result {
                 importStep(from: url)

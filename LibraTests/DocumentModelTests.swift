@@ -143,6 +143,31 @@ import simd
         #expect(document.group(group)?.name == "Forearm")
     }
 
+    @Test func outlineExpansionIsRememberedPerFile() throws {
+        let defaults = try #require(UserDefaults(suiteName: "OutlineExpansionTests"))
+        defaults.removePersistentDomain(forName: "OutlineExpansionTests")
+        let robot = URL(filePath: "/tmp/Robot.libra")
+        let copy = URL(filePath: "/tmp/Robot Copy.libra")
+
+        let model = DocumentModel()
+        model.expansionStore = OutlineExpansionStore(defaults: defaults)
+        model.documentOpened(at: robot)
+        model.setAssembly(["Robot"], expanded: true)
+        model.setAssembly(["Robot", "Arm"], expanded: true)
+        model.setAssembly(["Robot", "Arm"], expanded: false)
+        // Save As carries the outline to the new file
+        model.documentMoved(to: copy)
+
+        let reopened = DocumentModel()
+        reopened.expansionStore = OutlineExpansionStore(defaults: defaults)
+        reopened.documentOpened(at: robot)
+        #expect(reopened.expandedAssemblies == [["Robot"]])
+        reopened.documentOpened(at: copy)
+        #expect(reopened.expandedAssemblies == [["Robot"]])
+        reopened.documentOpened(at: nil)
+        #expect(reopened.expandedAssemblies.isEmpty)
+    }
+
     @Test func selectOthersSelectsEveryInstance() {
         var document = Self.makeDocument()
         document.parts.append(Self.cube(name: "Base", path: ["Robot"], corner: [0.4, 0, 0]))

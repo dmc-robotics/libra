@@ -8,9 +8,8 @@ struct SidebarView: View {
     var body: some View {
         List(selection: $model.selection) {
             Section("Parts") {
-                OutlineGroup(DocumentModel.outline(for: document.parts), children: \.children) { node in
-                    row(for: node)
-                        .tag(node.id)
+                ForEach(DocumentModel.outline(for: document.parts)) { node in
+                    OutlineRow(node: node, document: document, model: model)
                 }
             }
             Section("Groups") {
@@ -64,17 +63,39 @@ struct SidebarView: View {
             model.primaryAction(on: items)
         }
     }
+}
 
-    @ViewBuilder
-    private func row(for node: OutlineNode) -> some View {
-        if case .part(let id) = node.id, let part = document.part(id) {
+/// An assembly or part in the outline. Assemblies open and close like OutlineGroup rows, but the model remembers which are open.
+private struct OutlineRow: View {
+    let node: OutlineNode
+    let document: LibraDocument
+    let model: DocumentModel
+
+    var body: some View {
+        if case .assembly(let path) = node.id {
+            DisclosureGroup(isExpanded: isExpanded(path)) {
+                ForEach(node.children ?? []) { child in
+                    OutlineRow(node: child, document: document, model: model)
+                }
+            } label: {
+                Label(node.name, systemImage: "square.stack.3d.up")
+            }
+            .tag(node.id)
+        } else if case .part(let id) = node.id, let part = document.part(id) {
             HStack {
                 Label(node.name, systemImage: "cube")
                 Spacer()
                 MassStatusIcon(part: part)
             }
-        } else {
-            Label(node.name, systemImage: "square.stack.3d.up")
+            .tag(node.id)
+        }
+    }
+
+    private func isExpanded(_ path: [String]) -> Binding<Bool> {
+        Binding {
+            model.expandedAssemblies.contains(path)
+        } set: {
+            model.setAssembly(path, expanded: $0)
         }
     }
 }

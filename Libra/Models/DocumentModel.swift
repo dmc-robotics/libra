@@ -81,9 +81,14 @@ final class DocumentModel {
     var isShowingExport = false
     /// The group whose name the sidebar is editing in place.
     var renamingGroupID: UUID?
+    /// Assemblies open in the sidebar outline, by path.
+    private(set) var expandedAssemblies: Set<[String]> = []
+    /// Where the document is saved, which keys its remembered outline.
+    private(set) var fileURL: URL?
 
     @ObservationIgnored let viewer = ViewerController()
     @ObservationIgnored private var picker = PartPicker(parts: [])
+    @ObservationIgnored var expansionStore = OutlineExpansionStore()
 
     // MARK: Selection
 
@@ -163,6 +168,35 @@ final class DocumentModel {
             part.path.reduce(root) { $0.child(named: $1) }.parts.append(part)
         }
         return root.nodes
+    }
+
+    // MARK: Outline expansion
+
+    /// Restores the outline the way it was left when this file was last open.
+    func documentOpened(at fileURL: URL?) {
+        self.fileURL = fileURL
+        expandedAssemblies = fileURL.map(expansionStore.expandedAssemblies(for:)) ?? []
+    }
+
+    /// After Save As or a first save, the outline as it is now belongs to the new file.
+    func documentMoved(to fileURL: URL?) {
+        self.fileURL = fileURL
+        saveExpansion()
+    }
+
+    func setAssembly(_ path: [String], expanded: Bool) {
+        if expanded {
+            expandedAssemblies.insert(path)
+        } else {
+            expandedAssemblies.remove(path)
+        }
+        saveExpansion()
+    }
+
+    private func saveExpansion() {
+        if let fileURL {
+            expansionStore.save(expandedAssemblies, for: fileURL)
+        }
     }
 
     // MARK: Viewer input

@@ -26,13 +26,15 @@
 
 ### Groups
 
-
 - [x] Right click menus should work when clicking parts in the viewport, not just the parts/group sidebar.
 - [x] When right clicking part(s), the menu should have "Add to group" along with "New Group".
 - [x] Right clicking a group in the side bar should bring up a menu with "Select Parts"
 - [x] Double clicking a group in the side bar should allow the name to be edited in place.
 
-
-** Math
+### Math
 
 - [x] Implement a toggle to calculate interitas about COM vs global origin.
+
+### Outline Sidebar
+
+- [] Implement a visibilty toggle button for the parts and groups in the left side bar. 

@@ -7,6 +7,8 @@ enum Preferences {
     static let inertiaUnitKey = "inertiaUnit"
     /// Whether the inspector shows inertia about the center of mass or the frame's origin.
     static let inertiaReferenceKey = "inertiaReference"
+    /// Open assemblies in the sidebar outline, by file path. See `OutlineExpansionStore`.
+    static let expandedAssembliesKey = "expandedAssemblies"
     /// AppKit's wait before showing a tooltip, which is otherwise about a second.
     static let toolTipDelayKey = "NSInitialToolTipDelay"
     static let toolTipDelayMilliseconds = 500

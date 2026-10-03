@@ -104,6 +104,50 @@ import simd
         let scene = model.scene(for: document, highlightColor: highlight)
         #expect(scene.parts[0].color != scene.parts[1].color)
         #expect(scene.markers.contains(.centerOfMass([0.05, 0.05, 0.05])))
-        #expect(scene.markers.contains(.triad(.file, emphasized: false)))
+        #expect(scene.markers.contains(.triad(.file, size: .large, selected: false)))
+    }
+
+    @Test func sceneSelectsTheFrameBeingEdited() {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        let highlight: SIMD4<Float> = [1, 0, 0, 1]
+        #expect(model.scene(for: document, highlightColor: highlight).markers.contains(.triad(.file, size: .large, selected: true)))
+
+        model.createGroup(from: [.part(document.parts[0].id)], in: &document)
+        let markers = model.scene(for: document, highlightColor: highlight).markers
+        #expect(markers.contains(.triad(.file, size: .large, selected: false)))
+        #expect(markers.contains(.triad(.file, size: .small, selected: true)))
+    }
+
+    @Test func sceneDrawsAShownDefaultOverrideFrame() {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        let id = document.parts[0].id
+        document.changeMassKind(of: id, to: .override)
+        document.setShowsFrame(true, for: .override(id))
+        // It starts in the Libra frame, so it's drawn small inside the Libra frame's triad
+        let markers = model.scene(for: document, highlightColor: [1, 0, 0, 1]).markers
+        #expect(markers.contains(.triad(.file, size: .large, selected: true)))
+        #expect(markers.contains(.triad(.file, size: .small, selected: false)))
+    }
+
+    @Test func sceneDrawsShownFramesWhenNotSelected() throws {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        let createdGroup = document.createGroup(partIDs: [document.parts[0].id])
+        let id = try #require(createdGroup)
+        let groupFrame = Frame.file.moved(to: [1, 0, 0])
+        document.setFrame(groupFrame, for: .group(id))
+        let highlight: SIMD4<Float> = [1, 0, 0, 1]
+        #expect(!model.scene(for: document, highlightColor: highlight).markers.contains(.triad(groupFrame, size: .small, selected: false)))
+
+        document.setShowsFrame(true, for: .group(id))
+        #expect(model.scene(for: document, highlightColor: highlight).markers.contains(.triad(groupFrame, size: .small, selected: false)))
+
+        // Selected, it's drawn once, glowing
+        model.selection = [.group(id)]
+        let markers = model.scene(for: document, highlightColor: highlight).markers
+        #expect(markers.contains(.triad(groupFrame, size: .small, selected: true)))
+        #expect(!markers.contains(.triad(groupFrame, size: .small, selected: false)))
     }
 }

@@ -44,9 +44,15 @@ public struct FeatureReference: Hashable, Sendable {
     }
 }
 
+/// The Libra frame is drawn large; group and override frames small, so a frame that coincides with it still shows.
+public enum TriadSize: Hashable, Sendable {
+    case large, small
+}
+
 /// Overlay symbols, drawn on top of the model at a constant screen size.
 public enum Marker: Hashable, Sendable {
-    case triad(Frame, emphasized: Bool)
+    /// A coordinate frame; a selected one glows around its origin.
+    case triad(Frame, size: TriadSize, selected: Bool)
     case centerOfMass(SIMD3<Double>)
     case snapPoint(SIMD3<Double>)
     case snapDirection(origin: SIMD3<Double>, direction: SIMD3<Double>)

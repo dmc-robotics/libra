@@ -15,8 +15,12 @@ struct SidebarView: View {
             }
             Section("Groups") {
                 ForEach(document.groups) { group in
-                    Label(group.name, systemImage: "cube.fill")
-                        .badge(group.partIDs.count)
+                    HStack {
+                        Label(group.name, systemImage: "cube.fill")
+                        Spacer()
+                        FrameVisibilityToggle(target: .group(group.id), document: $document)
+                    }
+                    .badge(group.partIDs.count)
                         .tag(SidebarItem.group(group.id))
                 }
                 if document.groups.isEmpty {
@@ -47,11 +51,33 @@ struct SidebarView: View {
             HStack {
                 Label(node.name, systemImage: "cube")
                 Spacer()
+                if case .override = part.mass {
+                    FrameVisibilityToggle(target: .override(id), document: $document)
+                }
                 MassStatusIcon(part: part)
             }
         } else {
             Label(node.name, systemImage: "square.stack.3d.up")
         }
+    }
+}
+
+/// Shows or hides a group's or part's coordinate system in the viewer.
+struct FrameVisibilityToggle: View {
+    let target: FrameTarget
+    @Binding var document: LibraDocument
+
+    var body: some View {
+        let shows = document.showsFrame(target)
+        Button {
+            document.setShowsFrame(!shows, for: target)
+        } label: {
+            Image(systemName: "move.3d")
+                .foregroundStyle(shows ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
+        }
+        .buttonStyle(.borderless)
+        .imageScale(.small)
+        .help(shows ? "Hide coordinate system" : "Show coordinate system")
     }
 }
 

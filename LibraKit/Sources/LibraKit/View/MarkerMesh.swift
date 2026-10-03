@@ -11,9 +11,16 @@ public struct MarkerVertex: Sendable {
 public struct MarkerMesh {
     public enum Style {
         public static let triadLength = 60.0
-        public static let emphasizedTriadLength = 80.0
         public static let lineWidth = 2.5
-        public static let emphasizedLineWidth = 3.5
+        public static let originRadius = 3.0
+        public static let smallTriadLength = 42.0
+        public static let smallTriadLineWidth = 1.5
+        public static let smallOriginRadius = 2.5
+        /// Arrowheads on small triads, relative to the usual size.
+        public static let smallArrowScale = 0.75
+        /// A selected frame's origin: a soft halo in the highlight color, fading out from its center.
+        public static let selectedGlowRadius = 16.0
+        public static let selectedGlowOpacity: Float = 0.6
         public static let arrowLength = 10.0
         public static let arrowWidth = 8.0
         public static let centerOfMassRadius = 8.0
@@ -29,12 +36,13 @@ public struct MarkerMesh {
     }
 
     let camera: OrthographicCamera
-    let snapColor: SIMD4<Float>
+    /// Snap markers and the glow around a selected frame.
+    let highlightColor: SIMD4<Float>
     public private(set) var vertices: [MarkerVertex] = []
 
-    public init(markers: [Marker], camera: OrthographicCamera, snapColor: SIMD4<Float>) {
+    public init(markers: [Marker], camera: OrthographicCamera, highlightColor: SIMD4<Float>) {
         self.camera = camera
-        self.snapColor = snapColor
+        self.highlightColor = highlightColor
         for marker in markers {
             add(marker)
         }
@@ -44,14 +52,19 @@ public struct MarkerMesh {
 
     private mutating func add(_ marker: Marker) {
         switch marker {
-        case .triad(let frame, let emphasized):
-            let length = (emphasized ? Style.emphasizedTriadLength : Style.triadLength) * scale
-            let width = emphasized ? Style.emphasizedLineWidth : Style.lineWidth
+        case .triad(let frame, let size, let selected):
+            if selected {
+                glow(at: frame.origin, radius: Style.selectedGlowRadius, color: highlightColor, opacity: Style.selectedGlowOpacity)
+            }
+            let isSmall = size == .small
+            let length = (isSmall ? Style.smallTriadLength : Style.triadLength) * scale
+            let width = isSmall ? Style.smallTriadLineWidth : Style.lineWidth
+            let headScale = isSmall ? Style.smallArrowScale : 1
             let colors = [Style.xColor, Style.yColor, Style.zColor]
             for axis in FrameAxis.allCases {
-                arrow(from: frame.origin, to: frame.origin + frame.axis(axis) * length, width: width, color: colors[axis.rawValue])
+                arrow(from: frame.origin, to: frame.origin + frame.axis(axis) * length, width: width, headScale: headScale, color: colors[axis.rawValue])
             }
-            disc(at: frame.origin, radius: width * 1.2, color: Style.dark)
+            disc(at: frame.origin, radius: isSmall ? Style.smallOriginRadius : Style.originRadius, color: selected ? highlightColor : Style.dark)
         case .centerOfMass(let point):
             // The usual CG symbol: a circle in alternating dark and light quarters
             disc(at: point, radius: Style.centerOfMassRadius + 1.5, color: Style.dark)
@@ -59,16 +72,16 @@ public struct MarkerMesh {
                 sector(at: point, radius: Style.centerOfMassRadius, quarter: quarter, color: quarter.isMultiple(of: 2) ? Style.dark : Style.light)
             }
         case .snapPoint(let point):
-            ring(at: point, radius: Style.snapRadius, width: 2.5, color: snapColor)
-            disc(at: point, radius: 2, color: snapColor)
+            ring(at: point, radius: Style.snapRadius, width: 2.5, color: highlightColor)
+            disc(at: point, radius: 2, color: highlightColor)
         case .snapDirection(let origin, let direction):
             let half = Style.snapDirectionLength / 2 * scale
             let unit = simd_normalize(direction)
-            arrow(from: origin - unit * half, to: origin + unit * half, width: Style.lineWidth, color: snapColor)
-            disc(at: origin, radius: 3, color: snapColor)
+            arrow(from: origin - unit * half, to: origin + unit * half, width: Style.lineWidth, color: highlightColor)
+            disc(at: origin, radius: 3, color: highlightColor)
         case .snapEdge(let points):
             for (start, end) in zip(points, points.dropFirst()) {
-                line(from: start, to: end, width: Style.lineWidth, color: snapColor)
+                line(from: start, to: end, width: Style.lineWidth, color: highlightColor)
             }
         }
     }
@@ -96,7 +109,7 @@ public struct MarkerMesh {
         triangle(start - offset, end + offset, start + offset, color)
     }
 
-    private mutating func arrow(from start: SIMD3<Double>, to end: SIMD3<Double>, width: Double, color: SIMD4<Float>) {
+    private mutating func arrow(from start: SIMD3<Double>, to end: SIMD3<Double>, width: Double, headScale: Double = 1, color: SIMD4<Float>) {
         let side = perpendicular(start, end)
         let screenLength = simd_length(SIMD2(simd_dot(end - start, camera.right), simd_dot(end - start, camera.up)))
         guard side != .zero, screenLength > 1e-12 else {
@@ -105,10 +118,10 @@ public struct MarkerMesh {
             return
         }
         let direction = (end - start) / screenLength
-        let headLength = Style.arrowLength * scale
+        let headLength = Style.arrowLength * headScale * scale
         let shaftEnd = end - direction * min(headLength, screenLength)
         line(from: start, to: shaftEnd, width: width, color: color)
-        let halfWidth = Style.arrowWidth / 2 * scale
+        let halfWidth = Style.arrowWidth * headScale / 2 * scale
         triangle(shaftEnd - side * halfWidth, end, shaftEnd + side * halfWidth, color)
     }
 
@@ -122,6 +135,22 @@ public struct MarkerMesh {
             let start = Double(index) / Double(count) * 2 * .pi
             let end = Double(index + 1) / Double(count) * 2 * .pi
             triangle(center, circlePoint(center, radius, start), circlePoint(center, radius, end), color)
+        }
+    }
+
+    /// A disc that fades from `opacity` at the center to transparent at the rim.
+    private mutating func glow(at center: SIMD3<Double>, radius: Double, color: SIMD4<Float>, opacity: Float) {
+        var inside = color
+        inside.w = opacity
+        var rim = color
+        rim.w = 0
+        let count = Style.circleSegments
+        for index in 0..<count {
+            let start = Double(index) / Double(count) * 2 * .pi
+            let end = Double(index + 1) / Double(count) * 2 * .pi
+            for (point, pointColor) in [(center, inside), (circlePoint(center, radius, start), rim), (circlePoint(center, radius, end), rim)] {
+                vertices.append(MarkerVertex(position: SIMD3<Float>(point), color: pointColor))
+            }
         }
     }
 

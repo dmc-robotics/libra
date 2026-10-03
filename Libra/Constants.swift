@@ -5,6 +5,9 @@ enum Preferences {
     static let lengthUnitKey = "lengthUnit"
     static let massUnitKey = "massUnit"
     static let inertiaUnitKey = "inertiaUnit"
+    /// AppKit's wait before showing a tooltip, which is otherwise about a second.
+    static let toolTipDelayKey = "NSInitialToolTipDelay"
+    static let toolTipDelayMilliseconds = 500
 }
 
 enum Layout {

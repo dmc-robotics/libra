@@ -8,9 +8,10 @@
 
 ### Coordinate Systems
 
-- [ ] When a coordinate system is selected, it should highlight (subtle color change/glow around the origin dot)
-- [ ] Group/part coordinate systems should be visibly different than the global coordinate system - a little smaller with thinner lines.
-- [ ] Each group and part in the side bar should have a coordinate system visibility toggle.
+- [x] When a coordinate system is selected, it should highlight (subtle color change/glow around the origin dot)
+- [x] Each group and part in the side bar should have a coordinate system visibility toggle.
+- [x] Group/part coordinate systems should be visibly different than the global coordinate system - a little smaller with thinner lines.
+
 
 ### Parts
 

@@ -2,6 +2,10 @@ import SwiftUI
 
 @main
 struct LibraApp: App {
+    init() {
+        UserDefaults.standard.register(defaults: [Preferences.toolTipDelayKey: Preferences.toolTipDelayMilliseconds])
+    }
+
     var body: some Scene {
         DocumentGroup(newDocument: LibraFileDocument()) { configuration in
             DocumentView(document: configuration.$document, fileURL: configuration.fileURL)

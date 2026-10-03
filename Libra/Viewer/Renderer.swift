@@ -31,18 +31,26 @@ final class Renderer: NSObject, MTKViewDelegate {
         self.device = device
         self.commandQueue = commandQueue
 
-        func pipeline(_ vertex: String, _ fragment: String) -> MTLRenderPipelineState? {
+        func pipeline(_ vertex: String, _ fragment: String, blended: Bool = false) -> MTLRenderPipelineState? {
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.vertexFunction = library.makeFunction(name: vertex)
             descriptor.fragmentFunction = library.makeFunction(name: fragment)
             descriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
+            if blended {
+                let attachment = descriptor.colorAttachments[0]!
+                attachment.isBlendingEnabled = true
+                attachment.sourceRGBBlendFactor = .sourceAlpha
+                attachment.destinationRGBBlendFactor = .oneMinusSourceAlpha
+                attachment.sourceAlphaBlendFactor = .one
+                attachment.destinationAlphaBlendFactor = .oneMinusSourceAlpha
+            }
             descriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
             descriptor.rasterSampleCount = view.sampleCount
             return try? device.makeRenderPipelineState(descriptor: descriptor)
         }
         guard let facePipeline = pipeline("faceVertex", "faceFragment"),
               let linePipeline = pipeline("lineVertex", "lineFragment"),
-              let markerPipeline = pipeline("markerVertex", "markerFragment") else { return nil }
+              let markerPipeline = pipeline("markerVertex", "markerFragment", blended: true) else { return nil }
         self.facePipeline = facePipeline
         self.linePipeline = linePipeline
         self.markerPipeline = markerPipeline
@@ -128,7 +136,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         }
 
         // Markers, always on top
-        let markers = MarkerMesh(markers: scene.markers, camera: camera, snapColor: scene.highlightColor).vertices
+        let markers = MarkerMesh(markers: scene.markers, camera: camera, highlightColor: scene.highlightColor).vertices
         if !markers.isEmpty, let buffer = PartBuffers.buffer(device, markers) {
             encoder.setDepthStencilState(overlayDepth)
             encoder.setRenderPipelineState(markerPipeline)

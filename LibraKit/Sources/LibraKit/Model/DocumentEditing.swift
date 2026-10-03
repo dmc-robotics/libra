@@ -42,6 +42,40 @@ extension LibraDocument {
         }
     }
 
+    /// Whether the viewer draws a frame even when it isn't being edited. The Libra frame always shows;
+    /// an override frame shows only while its part has an override.
+    public func showsFrame(_ target: FrameTarget) -> Bool {
+        switch target {
+        case .libra:
+            true
+        case .group(let id):
+            group(id)?.showsFrame ?? false
+        case .override(let id):
+            if case .override(let values) = part(id)?.mass { values.showsFrame } else { false }
+        }
+    }
+
+    public mutating func setShowsFrame(_ shows: Bool, for target: FrameTarget) {
+        switch target {
+        case .libra:
+            break
+        case .group(let id):
+            guard let index = groups.firstIndex(where: { $0.id == id }) else { return }
+            groups[index].showsFrame = shows
+        case .override(let id):
+            guard let index = parts.firstIndex(where: { $0.id == id }),
+                  case .override(var values) = parts[index].mass else { return }
+            values.showsFrame = shows
+            parts[index].mass = .override(values)
+        }
+    }
+
+    /// The frames the viewer draws when none is being edited: the Libra frame, then shown group and override frames.
+    public var shownFrameTargets: [FrameTarget] {
+        let candidates = [FrameTarget.libra] + groups.map { .group($0.id) } + parts.map { .override($0.id) }
+        return candidates.filter(showsFrame)
+    }
+
     // MARK: Groups
 
     /// Makes a group from `partIDs`, taking them out of any other group. The frame starts as the Libra frame.

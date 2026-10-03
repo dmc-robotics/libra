@@ -29,12 +29,15 @@ public struct MassOverride: Codable, Hashable, Sendable {
     /// About the center of mass, along `frame`'s axes.
     public var inertia: InertiaTensor
     public var frame: Frame
+    /// Draw `frame` in the viewer even when it isn't being edited.
+    public var showsFrame: Bool
 
-    public init(mass: Double, centerOfMass: SIMD3<Double>, inertia: InertiaTensor, frame: Frame) {
+    public init(mass: Double, centerOfMass: SIMD3<Double>, inertia: InertiaTensor, frame: Frame, showsFrame: Bool = false) {
         self.mass = mass
         self.centerOfMass = centerOfMass
         self.inertia = inertia
         self.frame = frame
+        self.showsFrame = showsFrame
     }
 
     /// Converted to file coordinates.

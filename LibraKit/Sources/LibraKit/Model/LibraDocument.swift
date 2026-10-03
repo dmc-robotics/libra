@@ -64,11 +64,14 @@ public struct PartGroup: Codable, Hashable, Identifiable, Sendable {
     public var name: String
     public var partIDs: [UUID]
     public var frame: Frame
+    /// Draw `frame` in the viewer even when the group isn't selected.
+    public var showsFrame: Bool
 
-    public init(id: UUID = UUID(), name: String, partIDs: [UUID], frame: Frame) {
+    public init(id: UUID = UUID(), name: String, partIDs: [UUID], frame: Frame, showsFrame: Bool = false) {
         self.id = id
         self.name = name
         self.partIDs = partIDs
         self.frame = frame
+        self.showsFrame = showsFrame
     }
 }

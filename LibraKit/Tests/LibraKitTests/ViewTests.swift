@@ -116,3 +116,35 @@ import simd
         expectClose(abs(try #require(edge.direction).x), 1, tolerance: 1e-6)
     }
 }
+
+@Suite struct MarkerMeshTests {
+    let camera = OrthographicCamera(viewportSize: [800, 600], sceneBounds: Fixtures.boxPart(size: [1, 1, 1], corner: .zero).geometry.bounds)
+    let highlight: SIMD4<Float> = [1, 0, 1, 1]
+
+    func colors(_ marker: Marker) -> [SIMD4<Float>] {
+        MarkerMesh(markers: [marker], camera: camera, highlightColor: highlight).vertices.map(\.color)
+    }
+
+    /// How far the triad reaches from its origin, in points.
+    func reach(_ size: TriadSize) -> Double {
+        let positions = MarkerMesh(markers: [.triad(.file, size: size, selected: false)], camera: camera, highlightColor: highlight)
+            .vertices.map { SIMD3<Double>($0.position) }
+        return positions.map(simd_length).max()! / camera.worldPerPoint
+    }
+
+    @Test func smallTriadsAreShorter() {
+        #expect(abs(reach(.large) - MarkerMesh.Style.triadLength) < 1e-3)
+        #expect(abs(reach(.small) - MarkerMesh.Style.smallTriadLength) < 1e-3)
+    }
+
+    @Test func selectedFrameGlowsInTheHighlightColor() {
+        let plain = colors(.triad(.file, size: .large, selected: false))
+        #expect(!plain.contains { $0.x == highlight.x && $0.y == highlight.y && $0.z == highlight.z })
+        #expect(plain.allSatisfy { $0.w == 1 })
+
+        let selected = colors(.triad(.file, size: .large, selected: true))
+        #expect(selected.contains(highlight))
+        #expect(selected.contains([1, 0, 1, MarkerMesh.Style.selectedGlowOpacity]))
+        #expect(selected.contains([1, 0, 1, 0]))
+    }
+}

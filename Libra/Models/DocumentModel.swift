@@ -273,9 +273,14 @@ final class DocumentModel {
 
         var markers: [Marker] = []
         let target = activeFrameTarget(in: document)
-        markers.append(.triad(document.libraFrame, emphasized: target == .libra))
-        if let target, target != .libra, let frame = document.frame(for: target) {
-            markers.append(.triad(frame, emphasized: true))
+        var frameTargets = document.shownFrameTargets
+        if let target, !frameTargets.contains(target) {
+            frameTargets.append(target)
+        }
+        for frameTarget in frameTargets {
+            if let frame = document.frame(for: frameTarget) {
+                markers.append(.triad(frame, size: frameTarget == .libra ? .large : .small, selected: frameTarget == target))
+            }
         }
         let summary = MassSummary(parts: selectedIDs.isEmpty ? document.parts : document.parts(selectedIDs))
         if summary.properties.mass > 0 {

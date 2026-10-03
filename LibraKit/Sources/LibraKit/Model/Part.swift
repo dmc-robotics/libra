@@ -14,10 +14,13 @@ public struct Part: Codable, Hashable, Identifiable, Sendable {
     public var geometry: PartGeometry
     /// Weighed mass in kg, spread uniformly through the part's volume. Zero until the user enters one.
     public var mass: Double
+    /// Left out of the viewer. Still counts toward mass properties.
+    public var isHidden: Bool
 
     public init(
         id: UUID = UUID(), name: String, definitionName: String, path: [String], color: RGBColor?,
-        volumeProperties: VolumeProperties, geometry: PartGeometry, mass: Double = 0
+        volumeProperties: VolumeProperties, geometry: PartGeometry, mass: Double = 0,
+        isHidden: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -27,6 +30,7 @@ public struct Part: Codable, Hashable, Identifiable, Sendable {
         self.volumeProperties = volumeProperties
         self.geometry = geometry
         self.mass = mass
+        self.isHidden = isHidden
     }
 
     /// Surface bodies and other shapes without a closed volume can't take a mass.

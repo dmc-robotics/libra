@@ -35,6 +35,6 @@
 
 - [x] Implement a toggle to calculate interitas about COM vs global origin.
 
-### Outline Sidebar
+### Left Sidebar
 
-- [] Implement a visibilty toggle button for the parts and groups in the left side bar. 
+- [x] Implement a visibilty toggle button for the parts and groups in the left side bar.

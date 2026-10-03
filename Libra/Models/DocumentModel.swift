@@ -201,9 +201,11 @@ final class DocumentModel {
 
     // MARK: Viewer input
 
+    /// Only visible parts can be clicked.
     private func syncPicker(with document: LibraDocument) {
-        if picker.partIDs != document.parts.map(\.id) {
-            picker = PartPicker(parts: document.parts)
+        let visibleParts = document.parts.filter { !$0.isHidden }
+        if picker.partIDs != visibleParts.map(\.id) {
+            picker = PartPicker(parts: visibleParts)
         }
     }
 
@@ -372,7 +374,7 @@ final class DocumentModel {
             document.groups.enumerated().flatMap { index, group in group.partIDs.map { ($0, index) } },
             uniquingKeysWith: { first, _ in first }
         )
-        let parts = document.parts.map { part in
+        let parts = document.parts.filter { !$0.isHidden }.map { part in
             var color: SIMD4<Float> = switch colorMode {
             case .cad:
                 part.color.map { SIMD4($0.red, $0.green, $0.blue, 1) } ?? ViewerStyle.defaultPartColor

@@ -9,7 +9,7 @@ struct SidebarView: View {
         List(selection: $model.selection) {
             Section("Parts") {
                 ForEach(DocumentModel.outline(for: document.parts)) { node in
-                    OutlineRow(node: node, document: document, model: model)
+                    OutlineRow(node: node, document: $document, model: model)
                 }
             }
             Section("Groups") {
@@ -68,23 +68,30 @@ struct SidebarView: View {
 /// An assembly or part in the outline. Assemblies open and close like OutlineGroup rows, but the model remembers which are open.
 private struct OutlineRow: View {
     let node: OutlineNode
-    let document: LibraDocument
+    @Binding var document: LibraDocument
     let model: DocumentModel
 
     var body: some View {
         if case .assembly(let path) = node.id {
             DisclosureGroup(isExpanded: isExpanded(path)) {
                 ForEach(node.children ?? []) { child in
-                    OutlineRow(node: child, document: document, model: model)
+                    OutlineRow(node: child, document: $document, model: model)
                 }
             } label: {
-                Label(node.name, systemImage: "square.stack.3d.up")
+                let partIDs = model.partIDs(of: [node.id], in: document)
+                HStack {
+                    Label(node.name, systemImage: "square.stack.3d.up")
+                    Spacer()
+                    VisibilityToggle(isHidden: document.areAllHidden(partIDs)) { document.setHidden($0, forParts: partIDs) }
+                    MassStatusIcon(parts: document.parts(partIDs))
+                }
             }
             .tag(node.id)
         } else if case .part(let id) = node.id, let part = document.part(id) {
             HStack {
                 Label(node.name, systemImage: "cube")
                 Spacer()
+                VisibilityToggle(isHidden: part.isHidden) { document.setHidden($0, forParts: [id]) }
                 MassStatusIcon(part: part)
             }
             .tag(node.id)
@@ -136,8 +143,29 @@ private struct GroupRow: View {
             }
             Spacer()
             FrameVisibilityToggle(target: .group(group.id), document: $document)
+            VisibilityToggle(isHidden: document.areAllHidden(group.partIDs)) {
+                document.setHidden($0, forParts: Set(group.partIDs))
+            }
         }
         .badge(group.partIDs.count)
+    }
+}
+
+/// Shows or hides parts in the viewer: an eye, struck through while hidden.
+struct VisibilityToggle: View {
+    let isHidden: Bool
+    let setHidden: (Bool) -> Void
+
+    var body: some View {
+        Button {
+            setHidden(!isHidden)
+        } label: {
+            Image(systemName: isHidden ? "eye.slash" : "eye")
+                .foregroundStyle(isHidden ? HierarchicalShapeStyle.tertiary : .secondary)
+        }
+        .buttonStyle(.borderless)
+        .imageScale(.small)
+        .help(isHidden ? "Show in the viewer" : "Hide in the viewer")
     }
 }
 
@@ -162,24 +190,52 @@ struct FrameVisibilityToggle: View {
 
 /// A quiet trailing mark for a part's mass: hollow until assigned, a warning only when something is wrong.
 struct MassStatusIcon: View {
-    let part: Part
+    enum Status {
+        case missing, noVolume, assigned
+    }
+
+    let status: Status
+    let help: String
+
+    init(part: Part) {
+        if part.mass <= 0 {
+            status = .missing
+            help = "No mass yet"
+        } else if !part.hasVolume {
+            status = .noVolume
+            help = "This part has no volume, so its mass can't be spread through it and is left out."
+        } else {
+            status = .assigned
+            help = "Mass assigned"
+        }
+    }
+
+    /// An assembly: done once every part counts toward the mass.
+    init(parts: [Part]) {
+        if parts.allSatisfy({ $0.massProperties != nil }) {
+            status = .assigned
+            help = "Every part has a mass"
+        } else {
+            status = .missing
+            help = "Not every part has a mass yet"
+        }
+    }
 
     var body: some View {
         Group {
-            if part.mass <= 0 {
+            switch status {
+            case .missing:
                 Image(systemName: "circle.dashed")
                     .foregroundStyle(.tertiary)
-                    .help("No mass yet")
-            } else if !part.hasVolume {
+            case .noVolume:
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                    .help("This part has no volume, so its mass can't be spread through it and is left out.")
-            } else {
+            case .assigned:
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                    .help("Mass assigned")
             }
         }
+        .help(help)
         .imageScale(.small)
     }
 }

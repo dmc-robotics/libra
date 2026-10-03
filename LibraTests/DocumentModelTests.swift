@@ -168,6 +168,16 @@ import simd
         #expect(reopened.expandedAssemblies.isEmpty)
     }
 
+    @Test func hiddenPartsLeaveTheViewerButKeepTheirMass() {
+        var document = Self.makeDocument()
+        document.setMass(1, forParts: Set(document.parts.map(\.id)))
+        document.setHidden(true, forParts: [document.parts[0].id])
+        let scene = DocumentModel().scene(for: document, highlightColor: [1, 0, 0, 1])
+        #expect(scene.parts.map(\.id) == [document.parts[1].id])
+        // The center of mass is still between both cubes
+        #expect(scene.markers.contains(.centerOfMass([0.15, 0.05, 0.05])))
+    }
+
     @Test func selectOthersSelectsEveryInstance() {
         var document = Self.makeDocument()
         document.parts.append(Self.cube(name: "Base", path: ["Robot"], corner: [0.4, 0, 0]))

@@ -94,6 +94,21 @@ import simd
         #expect(document.instances(sharingComponentWith: [UUID()]).isEmpty)
     }
 
+    @Test func hidingParts() {
+        var document = Self.makeDocument()
+        let ids = document.parts.map(\.id)
+        #expect(!document.areAllHidden([ids[0], ids[1]]))
+
+        document.setHidden(true, forParts: [ids[0]])
+        #expect(document.parts.map(\.isHidden) == [true, false, false])
+        #expect(!document.areAllHidden([ids[0], ids[1]]))
+        document.setHidden(true, forParts: [ids[1]])
+        #expect(document.areAllHidden([ids[0], ids[1]]))
+
+        // Nothing to show, so an empty group or assembly isn't hidden
+        #expect(!document.areAllHidden([]))
+    }
+
     @Test func setMassForSeveralParts() {
         var document = Self.makeDocument()
         let ids = Set(document.parts.prefix(2).map(\.id))

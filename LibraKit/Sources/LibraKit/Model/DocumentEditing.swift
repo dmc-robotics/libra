@@ -113,6 +113,20 @@ extension LibraDocument {
         return "Group \(number)"
     }
 
+    // MARK: Visibility
+
+    public mutating func setHidden(_ hidden: Bool, forParts partIDs: Set<UUID>) {
+        for index in parts.indices where partIDs.contains(parts[index].id) {
+            parts[index].isHidden = hidden
+        }
+    }
+
+    /// Whether all these parts are hidden, so a group or assembly shows as hidden. False for none.
+    public func areAllHidden(_ partIDs: some Sequence<UUID>) -> Bool {
+        let members = parts(partIDs)
+        return !members.isEmpty && members.allSatisfy(\.isHidden)
+    }
+
     // MARK: Mass
 
     /// Sets the mass, in kg, of each of the parts.

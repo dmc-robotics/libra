@@ -216,11 +216,19 @@ final class ViewerMTKView: MTKView {
     private func showContextMenu(for event: NSEvent) {
         let items = contextMenu?(pointer(at: point(of: event))) ?? []
         guard !items.isEmpty else { return }
+        NSMenu.popUpContextMenu(Self.menu(items), with: event, for: self)
+    }
+
+    private static func menu(_ items: [ViewerMenuItem]) -> NSMenu {
         let menu = NSMenu()
         for item in items {
-            menu.addItem(ActionMenuItem(title: item.title, action: item.action))
+            let menuItem = ActionMenuItem(title: item.title, action: item.action)
+            if !item.children.isEmpty {
+                menuItem.submenu = Self.menu(item.children)
+            }
+            menu.addItem(menuItem)
         }
-        NSMenu.popUpContextMenu(menu, with: event, for: self)
+        return menu
     }
 
     override func otherMouseUp(with event: NSEvent) {
@@ -289,11 +297,11 @@ extension ViewerMTKView: NSViewToolTipOwner {
 
 /// A menu item that runs a closure.
 private final class ActionMenuItem: NSMenuItem {
-    private let handler: () -> Void
+    private let handler: (() -> Void)?
 
-    init(title: String, action handler: @escaping () -> Void) {
+    init(title: String, action handler: (() -> Void)?) {
         self.handler = handler
-        super.init(title: title, action: #selector(run), keyEquivalent: "")
+        super.init(title: title, action: handler == nil ? nil : #selector(run), keyEquivalent: "")
         target = self
     }
 
@@ -303,6 +311,6 @@ private final class ActionMenuItem: NSMenuItem {
     }
 
     @objc private func run() {
-        handler()
+        handler?()
     }
 }

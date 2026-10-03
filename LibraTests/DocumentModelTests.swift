@@ -96,6 +96,21 @@ import simd
         #expect(model.selection == [.group(group.id)])
     }
 
+    @Test func partMenuAddsToAGroup() throws {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        let createdGroup = document.createGroup(named: "Arm", partIDs: [document.parts[1].id])
+        let group = try #require(createdGroup)
+        let addToGroup = try #require(model.partMenu(in: document).last)
+        #expect(addToGroup.title == "Add to Group")
+        #expect(addToGroup.command == nil)
+        #expect(addToGroup.children.map(\.title) == ["Arm"])
+        #expect(addToGroup.children.map(\.command) == [.addToGroup(group)])
+
+        model.perform(.addToGroup(group), on: [document.parts[0].id], in: &document)
+        #expect(document.group(group)?.partIDs == document.parts.map(\.id))
+    }
+
     @Test func selectOthersSelectsEveryInstance() {
         var document = Self.makeDocument()
         document.parts.append(Self.cube(name: "Base", path: ["Robot"], corner: [0.4, 0, 0]))

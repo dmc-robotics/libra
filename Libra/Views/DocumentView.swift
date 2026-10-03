@@ -119,9 +119,15 @@ struct DocumentView: View {
 
     private func viewerMenu(for pointer: ViewerPointer) -> [ViewerMenuItem] {
         guard let partIDs = model.contextMenuPartIDs(for: pointer, in: document.content) else { return [] }
-        return model.partMenu(in: document.content).map { item in
-            ViewerMenuItem(title: item.title) { model.perform(item.command, on: partIDs, in: &document.content) }
-        }
+        return model.partMenu(in: document.content).map { viewerMenuItem($0, partIDs: partIDs) }
+    }
+
+    private func viewerMenuItem(_ item: PartMenuItem, partIDs: Set<UUID>) -> ViewerMenuItem {
+        ViewerMenuItem(
+            title: item.title,
+            action: item.command.map { command in { model.perform(command, on: partIDs, in: &document.content) } },
+            children: item.children.map { viewerMenuItem($0, partIDs: partIDs) }
+        )
     }
 
     @ToolbarContentBuilder

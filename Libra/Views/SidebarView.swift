@@ -36,8 +36,20 @@ struct SidebarView: View {
             let partIDs = model.partIDs(of: items.filter { if case .group = $0 { false } else { true } }, in: document)
             if !partIDs.isEmpty {
                 ForEach(model.partMenu(in: document)) { item in
-                    Button(item.title) {
-                        model.perform(item.command, on: partIDs, in: &document)
+                    if let command = item.command {
+                        Button(item.title) {
+                            model.perform(command, on: partIDs, in: &document)
+                        }
+                    } else {
+                        Menu(item.title) {
+                            ForEach(item.children) { child in
+                                Button(child.title) {
+                                    if let command = child.command {
+                                        model.perform(command, on: partIDs, in: &document)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

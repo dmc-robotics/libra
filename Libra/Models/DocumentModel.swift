@@ -42,13 +42,15 @@ enum ColorMode: String, CaseIterable, Identifiable {
 enum PartCommand: Hashable {
     case selectOthers
     case newGroup
+    case addToGroup(UUID)
 }
 
-struct PartMenuItem: Hashable, Identifiable {
+/// A command, or a submenu of them when `command` is nil.
+struct PartMenuItem: Identifiable {
+    let id = UUID()
     var title: String
-    var command: PartCommand
-
-    var id: PartCommand { command }
+    var command: PartCommand?
+    var children: [PartMenuItem] = []
 }
 
 /// What the viewer reports about the cursor.
@@ -266,10 +268,15 @@ final class DocumentModel {
 
     /// The right-click menu for parts, the same in the sidebar and the viewer.
     func partMenu(in document: LibraDocument) -> [PartMenuItem] {
-        [
+        var items = [
             PartMenuItem(title: "Select Others", command: .selectOthers),
             PartMenuItem(title: "New Group", command: .newGroup)
         ]
+        if !document.groups.isEmpty {
+            let groups = document.groups.map { PartMenuItem(title: $0.name, command: .addToGroup($0.id)) }
+            items.append(PartMenuItem(title: "Add to Group", children: groups))
+        }
+        return items
     }
 
     func perform(_ command: PartCommand, on partIDs: Set<UUID>, in document: inout LibraDocument) {
@@ -278,6 +285,8 @@ final class DocumentModel {
             selectOthers(like: partIDs, in: document)
         case .newGroup:
             createGroup(from: Set(partIDs.map(SidebarItem.part)), in: &document)
+        case .addToGroup(let id):
+            document.addParts(partIDs, toGroup: id)
         }
     }
 

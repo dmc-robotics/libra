@@ -31,8 +31,9 @@ struct ViewerView: NSViewRepresentable {
     }
 }
 
-/// One command in the viewer's right-click menu.
+/// One command in the viewer's right-click menu, or a submenu of them.
 struct ViewerMenuItem {
     var title: String
-    var action: () -> Void
+    var action: (() -> Void)?
+    var children: [ViewerMenuItem] = []
 }

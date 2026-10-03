@@ -148,3 +148,21 @@ import simd
         #expect(selected.contains([1, 0, 1, 0]))
     }
 }
+
+@Suite struct TooltipRegionTests {
+    @Test func tooltipsAtTheSameSpotShareARegion() {
+        var camera = OrthographicCamera(viewportSize: [800, 600], sceneBounds: Fixtures.boxPart(size: [1, 1, 1]).geometry.bounds)
+        camera.look(from: .front, in: .file)
+        camera.fit(Fixtures.boxPart(size: [1, 1, 1]).geometry.bounds)
+        let regions = TooltipRegion.regions(for: [
+            ViewerTooltip(point: .zero, radius: 8, text: "Libra frame"),
+            ViewerTooltip(point: [1, 0, 1], radius: 8, text: "Arm frame"),
+            ViewerTooltip(point: .zero, radius: 10, text: "Base frame")
+        ], camera: camera)
+        #expect(regions.count == 2)
+        #expect(regions[0].text == "Libra frame\nBase frame")
+        #expect(regions[0].radius == 10)
+        expectClose(regions[0].center, camera.project(.zero))
+        #expect(regions[1].text == "Arm frame")
+    }
+}

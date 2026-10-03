@@ -146,6 +146,18 @@ import simd
         #expect(markers.contains(.triad(.file, size: .small, selected: true)))
     }
 
+    @Test func frameOriginsNameTheirFrames() throws {
+        var document = Self.makeDocument()
+        let model = DocumentModel()
+        let createdGroup = document.createGroup(named: "Arm", partIDs: [document.parts[1].id])
+        let id = try #require(createdGroup)
+        document.setFrame(Frame.file.moved(to: [1, 0, 0]), for: .group(id))
+        document.setShowsFrame(true, for: .group(id))
+        let tooltips = model.scene(for: document, highlightColor: [1, 0, 0, 1]).tooltips
+        #expect(tooltips.map(\.text) == ["Libra frame", "Arm frame"])
+        #expect(tooltips.map(\.point) == [.zero, [1, 0, 0]])
+    }
+
     @Test func sceneDrawsShownFramesWhenNotSelected() throws {
         var document = Self.makeDocument()
         let model = DocumentModel()

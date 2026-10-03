@@ -32,6 +32,7 @@ final class ViewerMTKView: MTKView {
     private var isDragging = false
     private var isPanning = false
     private var orbitPivot: SIMD3<Double> = .zero
+    private var toolTipTexts: [NSView.ToolTipTag: String] = [:]
     /// The first fit waits until the view has been laid out at its real size.
     private var needsInitialFit = false
 
@@ -65,13 +66,13 @@ final class ViewerMTKView: MTKView {
                 fitIfReady()
             }
         }
-        needsDisplay = true
+        redraw()
     }
 
     func fitToScene() {
         syncViewport()
         camera.fit(sceneBounds)
-        needsDisplay = true
+        redraw()
     }
 
     func look(from view: StandardView, in frame: Frame) {
@@ -98,19 +99,35 @@ final class ViewerMTKView: MTKView {
         }
         syncViewport()
         fitIfReady()
-        needsDisplay = true
+        redraw()
     }
 
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         updateClearColor()
-        needsDisplay = true
+        redraw()
     }
 
     private func updateClearColor() {
         let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         let background = isDark ? ViewerStyle.darkBackground : ViewerStyle.lightBackground
         clearColor = MTLClearColor(red: background.x, green: background.y, blue: background.z, alpha: 1)
+    }
+
+    // MARK: Drawing and tooltips
+
+    /// Draws again and moves the tooltip areas to follow the camera and scene.
+    private func redraw() {
+        needsDisplay = true
+        removeAllToolTips()
+        toolTipTexts = [:]
+        for region in TooltipRegion.regions(for: scene.tooltips, camera: camera) {
+            let rect = NSRect(
+                x: region.center.x - region.radius, y: region.center.y - region.radius,
+                width: 2 * region.radius, height: 2 * region.radius
+            )
+            toolTipTexts[addToolTip(rect, owner: self, userData: nil)] = region.text
+        }
     }
 
     // MARK: Pointer
@@ -232,7 +249,7 @@ final class ViewerMTKView: MTKView {
             camera.orbit(by: delta, around: orbitPivot, upAxis: upAxis)
         }
         lastDragPoint = point
-        needsDisplay = true
+        redraw()
     }
 
     private func endDrag() {
@@ -248,12 +265,12 @@ final class ViewerMTKView: MTKView {
         } else {
             camera.zoom(by: exp(-Double(event.scrollingDeltaY) * ViewerStyle.wheelZoomRate), at: point(of: event))
         }
-        needsDisplay = true
+        redraw()
     }
 
     override func magnify(with event: NSEvent) {
         camera.zoom(by: 1 / (1 + Double(event.magnification)), at: point(of: event))
-        needsDisplay = true
+        redraw()
     }
 
     override func keyDown(with event: NSEvent) {
@@ -261,6 +278,12 @@ final class ViewerMTKView: MTKView {
         if onKey?(characters, event.modifierFlags.contains(.shift)) != true {
             super.keyDown(with: event)
         }
+    }
+}
+
+extension ViewerMTKView: NSViewToolTipOwner {
+    func view(_ view: NSView, stringForToolTip tag: NSView.ToolTipTag, point: NSPoint, userData data: UnsafeMutableRawPointer?) -> String {
+        toolTipTexts[tag] ?? ""
     }
 }
 

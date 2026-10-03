@@ -9,15 +9,17 @@ public struct ViewerScene: Sendable {
     /// Selection tint, hovered face and snap markers.
     public var highlightColor: SIMD4<Float>
     public var markers: [Marker]
+    public var tooltips: [ViewerTooltip]
 
     public init(
         parts: [ViewerPart] = [], highlightedFace: FeatureReference? = nil,
-        highlightColor: SIMD4<Float> = [0, 0.5, 1, 1], markers: [Marker] = []
+        highlightColor: SIMD4<Float> = [0, 0.5, 1, 1], markers: [Marker] = [], tooltips: [ViewerTooltip] = []
     ) {
         self.parts = parts
         self.highlightedFace = highlightedFace
         self.highlightColor = highlightColor
         self.markers = markers
+        self.tooltips = tooltips
     }
 }
 
@@ -58,4 +60,43 @@ public enum Marker: Hashable, Sendable {
     case snapDirection(origin: SIMD3<Double>, direction: SIMD3<Double>)
     /// A highlighted edge.
     case snapEdge([SIMD3<Double>])
+}
+
+/// Text shown when the cursor rests on a point in the scene, such as a frame's origin.
+public struct ViewerTooltip: Hashable, Sendable {
+    public var point: SIMD3<Double>
+    /// Half the width of the square around the point that shows the text, in viewport points.
+    public var radius: Double
+    public var text: String
+
+    public init(point: SIMD3<Double>, radius: Double, text: String) {
+        self.point = point
+        self.radius = radius
+        self.text = text
+    }
+}
+
+/// Where a tooltip sits on screen. Tooltips whose points land on the same spot, like a group frame
+/// still at the Libra frame's origin, share one region with a line each.
+public struct TooltipRegion: Hashable, Sendable {
+    /// Points closer than this on screen count as the same spot.
+    public static let mergeDistance = 2.0
+
+    public var center: SIMD2<Double>
+    public var radius: Double
+    public var text: String
+
+    public static func regions(for tooltips: [ViewerTooltip], camera: OrthographicCamera) -> [TooltipRegion] {
+        var regions: [TooltipRegion] = []
+        for tooltip in tooltips {
+            let center = camera.project(tooltip.point)
+            if let index = regions.firstIndex(where: { simd_distance($0.center, center) < mergeDistance }) {
+                regions[index].radius = max(regions[index].radius, tooltip.radius)
+                regions[index].text += "\n" + tooltip.text
+            } else {
+                regions.append(TooltipRegion(center: center, radius: tooltip.radius, text: tooltip.text))
+            }
+        }
+        return regions
+    }
 }

@@ -21,6 +21,8 @@ public struct MarkerMesh {
         /// A selected frame's origin: a soft halo in the highlight color, fading out from its center.
         public static let selectedGlowRadius = 16.0
         public static let selectedGlowOpacity: Float = 0.6
+        /// How close to a frame's origin the cursor must rest to show its tooltip.
+        public static let originTooltipRadius = 8.0
         public static let arrowLength = 10.0
         public static let arrowWidth = 8.0
         public static let centerOfMassRadius = 8.0

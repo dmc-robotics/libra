@@ -289,6 +289,7 @@ final class DocumentModel {
         }
 
         var markers: [Marker] = []
+        var tooltips: [ViewerTooltip] = []
         let target = activeFrameTarget(in: document)
         var frameTargets = document.shownFrameTargets
         if let target, !frameTargets.contains(target) {
@@ -297,6 +298,9 @@ final class DocumentModel {
         for frameTarget in frameTargets {
             if let frame = document.frame(for: frameTarget) {
                 markers.append(.triad(frame, size: frameTarget == .libra ? .large : .small, selected: frameTarget == target))
+                tooltips.append(ViewerTooltip(
+                    point: frame.origin, radius: MarkerMesh.Style.originTooltipRadius, text: Self.frameName(frameTarget, in: document)
+                ))
             }
         }
         let summary = MassSummary(parts: selectedIDs.isEmpty ? document.parts : document.parts(selectedIDs))
@@ -317,8 +321,17 @@ final class DocumentModel {
             parts: parts,
             highlightedFace: hoverSnap?.edge == nil ? hoverSnap?.face : nil,
             highlightColor: highlightColor,
-            markers: markers
+            markers: markers,
+            tooltips: tooltips
         )
+    }
+
+    /// What a frame's origin is called in the viewer, e.g. "Libra frame" or "Arm frame".
+    static func frameName(_ target: FrameTarget, in document: LibraDocument) -> String {
+        switch target {
+        case .libra: "Libra frame"
+        case .group(let id): "\(document.group(id)?.name ?? "Group") frame"
+        }
     }
 }
 

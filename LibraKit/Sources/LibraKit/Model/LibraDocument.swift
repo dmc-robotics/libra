@@ -45,20 +45,34 @@ public struct LibraDocument: Codable, Hashable, Sendable {
     }
 
     public static func decoded(from data: Data) throws -> LibraDocument {
-        let document = try JSONDecoder().decode(LibraDocument.self, from: data)
+        let document: LibraDocument
+        do {
+            document = try JSONDecoder().decode(LibraDocument.self, from: data)
+        } catch is DecodingError {
+            throw FormatError.unreadable
+        }
         guard document.formatVersion <= currentFormatVersion else {
             throw FormatError.newerVersion(document.formatVersion)
         }
         return document
     }
 
-    public enum FormatError: LocalizedError {
+    public enum FormatError: LocalizedError, Equatable {
         case newerVersion(Int)
+        /// Usually a file from an older build: there's no converting old files, so a field it lacks fails the whole read.
+        case unreadable
 
         public var errorDescription: String? {
+            failureReason
+        }
+
+        /// The document open alert shows this after "could not be opened."
+        public var failureReason: String? {
             switch self {
             case .newerVersion(let version):
                 "This file was saved by a newer version of Libra (format \(version))."
+            case .unreadable:
+                "This file was probably saved by an older version of Libra and is missing data."
             }
         }
     }

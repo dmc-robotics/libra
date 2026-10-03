@@ -101,6 +101,19 @@ import simd
         #expect(decoded == document)
     }
 
+    @Test func explainsFilesFromOlderVersions() throws {
+        // A file from before parts could be hidden
+        var object = try #require(JSONSerialization.jsonObject(with: ExportTests.document.encoded()) as? [String: Any])
+        var parts = try #require(object["parts"] as? [[String: Any]])
+        parts[0].removeValue(forKey: "isHidden")
+        object["parts"] = parts
+        let data = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: LibraDocument.FormatError.unreadable) {
+            try LibraDocument.decoded(from: data)
+        }
+        #expect(LibraDocument.FormatError.unreadable.failureReason?.contains("older version") == true)
+    }
+
     @Test func rejectsNewerFormat() throws {
         var document = LibraDocument()
         document.formatVersion = LibraDocument.currentFormatVersion + 1
